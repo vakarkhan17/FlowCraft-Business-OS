@@ -1,0 +1,23 @@
+{
+  "name": "flowcraft-erp",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Customizable manufacturing ERP platform with Next.js, NestJS, Prisma, and PostgreSQL.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:api": "npm run start:dev -w @flowcraft/api",
+    "dev:web": "npm run dev -w @flowcraft/web",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate -w @flowcraft/api",
+    "prisma:migrate": "npm run prisma:migrate -w @flowcraft/api",
+    "prisma:seed": "npm run prisma:seed -w @flowcraft/api"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  }
+}

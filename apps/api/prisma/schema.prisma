@@ -1,0 +1,584 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  APPROVER
+  FINANCE
+  PURCHASING
+  SALES
+  WAREHOUSE
+  PRODUCTION
+  QC
+  MAINTENANCE
+  USER
+}
+
+enum ModuleCode {
+  ACCOUNTING
+  PURCHASING
+  SALES
+  WAREHOUSE
+  MRP
+  PRODUCTION
+  QUALITY
+  COSTING
+  MAINTENANCE
+  APPROVALS
+  REPORTS
+  PRINT_LAYOUTS
+  DASHBOARD
+  SETTINGS
+}
+
+enum FieldType {
+  TEXT
+  NUMBER
+  DATE
+  BOOLEAN
+  SELECT
+  MULTI_SELECT
+  JSON
+}
+
+enum TransactionKind {
+  PURCHASE_REQUEST
+  RFQ
+  SUPPLIER_QUOTATION
+  PURCHASE_ORDER
+  GRN
+  SUPPLIER_INVOICE
+  PAYMENT
+  SALES_INQUIRY
+  SALES_QUOTATION
+  SALES_ORDER
+  DELIVERY_NOTE
+  SALES_INVOICE
+  RECEIPT
+  BOM
+  WORK_ORDER
+  MATERIAL_ISSUE
+  PRODUCTION_ENTRY
+  QC_INSPECTION
+  FINISHED_GOODS_RECEIPT
+  MAINTENANCE_REQUEST
+  MAINTENANCE_WORK_ORDER
+  SPARE_PARTS_ISSUE
+  MAINTENANCE_COMPLETION_REPORT
+  JOURNAL_ENTRY
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model Client {
+  id            String          @id @default(cuid())
+  name          String
+  code          String          @unique
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  companies     Company[]
+  users         User[]
+  settings      ClientSetting[]
+  moduleSettings ModuleSetting[]
+
+  @@map("clients")
+}
+
+model Company {
+  id              String                  @id @default(cuid())
+  clientId        String
+  name            String
+  legalName       String?
+  taxNumber       String?
+  baseCurrency    String                  @default("USD")
+  logoUrl         String?
+  isActive        Boolean                 @default(true)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  client          Client                  @relation(fields: [clientId], references: [id])
+  branches        Branch[]
+  warehouses      Warehouse[]
+  users           User[]
+  customFields    CustomField[]
+  workflows       WorkflowDefinition[]
+  printLayouts    PrintLayoutTemplate[]
+  reportDefinitions ReportDefinition[]
+  approvalRules   ApprovalRule[]
+  numberingSeries DocumentNumberingSeries[]
+  items           Item[]
+  suppliers       Supplier[]
+  customers       Customer[]
+  documents       TransactionDocument[]
+  chartOfAccounts ChartOfAccount[]
+  journalEntries  JournalEntry[]
+
+  @@unique([clientId, name])
+  @@map("companies")
+}
+
+model Branch {
+  id          String      @id @default(cuid())
+  companyId   String
+  name        String
+  code        String
+  address     String?
+  isActive    Boolean     @default(true)
+  company     Company     @relation(fields: [companyId], references: [id])
+  warehouses  Warehouse[]
+  users       User[]
+
+  @@unique([companyId, code])
+  @@map("branches")
+}
+
+model Warehouse {
+  id          String   @id @default(cuid())
+  companyId   String
+  branchId    String?
+  name        String
+  code        String
+  isActive    Boolean  @default(true)
+  company     Company  @relation(fields: [companyId], references: [id])
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+
+  @@unique([companyId, code])
+  @@map("warehouses")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  clientId     String
+  companyId    String?
+  branchId     String?
+  email        String      @unique
+  name         String
+  passwordHash String
+  roles        Role[]      @default([USER])
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  client       Client      @relation(fields: [clientId], references: [id])
+  company      Company?    @relation(fields: [companyId], references: [id])
+  branch       Branch?     @relation(fields: [branchId], references: [id])
+  createdDocuments TransactionDocument[] @relation("DocumentCreator")
+  approvalHistory ApprovalHistory[]
+
+  @@map("users")
+}
+
+model ClientSetting {
+  id        String   @id @default(cuid())
+  clientId  String
+  key       String
+  value     Json
+  client    Client   @relation(fields: [clientId], references: [id])
+  updatedAt DateTime @updatedAt
+
+  @@unique([clientId, key])
+  @@map("client_settings")
+}
+
+model ModuleSetting {
+  id        String     @id @default(cuid())
+  clientId  String
+  module    ModuleCode
+  enabled   Boolean    @default(true)
+  settings  Json       @default("{}")
+  client    Client     @relation(fields: [clientId], references: [id])
+  updatedAt DateTime   @updatedAt
+
+  @@unique([clientId, module])
+  @@map("module_settings")
+}
+
+model CustomField {
+  id          String     @id @default(cuid())
+  companyId   String
+  module      ModuleCode
+  entityName  String
+  fieldKey    String
+  label       String
+  fieldType   FieldType
+  isRequired  Boolean    @default(false)
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  options     Json       @default("[]")
+  validation  Json       @default("{}")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  company     Company    @relation(fields: [companyId], references: [id])
+  values      CustomFieldValue[]
+
+  @@unique([companyId, entityName, fieldKey])
+  @@map("custom_fields")
+}
+
+model CustomFieldValue {
+  id          String      @id @default(cuid())
+  fieldId     String
+  recordId    String
+  recordType  String
+  value       Json
+  snapshotAt  DateTime    @default(now())
+  field       CustomField @relation(fields: [fieldId], references: [id])
+
+  @@index([recordType, recordId])
+  @@map("custom_field_values")
+}
+
+model WorkflowDefinition {
+  id          String       @id @default(cuid())
+  companyId   String
+  module      ModuleCode
+  name        String
+  version     Int          @default(1)
+  isActive    Boolean      @default(true)
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  company     Company      @relation(fields: [companyId], references: [id])
+  steps       WorkflowStep[]
+  transitions WorkflowTransition[]
+
+  @@unique([companyId, module, name, version])
+  @@map("workflow_definitions")
+}
+
+model WorkflowStep {
+  id            String             @id @default(cuid())
+  workflowId    String
+  name          String
+  code          String
+  stepOrder     Int
+  isEnabled     Boolean            @default(true)
+  config        Json               @default("{}")
+  workflow      WorkflowDefinition @relation(fields: [workflowId], references: [id])
+  fromTransitions WorkflowTransition[] @relation("FromStep")
+  toTransitions   WorkflowTransition[] @relation("ToStep")
+
+  @@unique([workflowId, code])
+  @@map("workflow_steps")
+}
+
+model WorkflowTransition {
+  id          String             @id @default(cuid())
+  workflowId  String
+  fromStepId  String?
+  toStepId    String?
+  condition   Json               @default("{}")
+  sortOrder   Int                @default(0)
+  workflow    WorkflowDefinition @relation(fields: [workflowId], references: [id])
+  fromStep    WorkflowStep?      @relation("FromStep", fields: [fromStepId], references: [id])
+  toStep      WorkflowStep?      @relation("ToStep", fields: [toStepId], references: [id])
+
+  @@unique([workflowId, fromStepId, toStepId])
+  @@map("workflow_transitions")
+}
+
+model PrintLayoutTemplate {
+  id           String               @id @default(cuid())
+  companyId    String
+  documentType TransactionKind
+  name         String
+  version      Int                  @default(1)
+  isDefault    Boolean              @default(false)
+  isActive     Boolean              @default(true)
+  canvas       Json                 @default("{}")
+  company      Company              @relation(fields: [companyId], references: [id])
+  sections     PrintLayoutSection[]
+  updatedAt    DateTime             @updatedAt
+
+  @@unique([companyId, documentType, name, version])
+  @@map("print_layout_templates")
+}
+
+model PrintLayoutSection {
+  id          String              @id @default(cuid())
+  templateId  String
+  sectionKey  String
+  label       String
+  position    Json                @default("{}")
+  style       Json                @default("{}")
+  dataBinding String?
+  content     Json                @default("{}")
+  template    PrintLayoutTemplate @relation(fields: [templateId], references: [id])
+
+  @@map("print_layout_sections")
+}
+
+model ReportDefinition {
+  id          String        @id @default(cuid())
+  companyId   String
+  module      ModuleCode
+  name        String
+  baseEntity  String
+  description String?
+  isActive    Boolean       @default(true)
+  settings    Json          @default("{}")
+  company     Company       @relation(fields: [companyId], references: [id])
+  fields      ReportField[]
+  filters     ReportFilter[]
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([companyId, name])
+  @@map("report_definitions")
+}
+
+model ReportField {
+  id          String           @id @default(cuid())
+  reportId    String
+  fieldPath   String
+  label       String
+  dataType    FieldType
+  sortOrder   Int              @default(0)
+  grouping    Boolean          @default(false)
+  aggregation String?
+  formula     String?
+  report      ReportDefinition @relation(fields: [reportId], references: [id])
+
+  @@map("report_fields")
+}
+
+model ReportFilter {
+  id          String           @id @default(cuid())
+  reportId    String
+  fieldPath   String
+  operator    String
+  value       Json?
+  isRequired  Boolean          @default(false)
+  report      ReportDefinition @relation(fields: [reportId], references: [id])
+
+  @@map("report_filters")
+}
+
+model ApprovalRule {
+  id           String            @id @default(cuid())
+  companyId    String
+  module       ModuleCode
+  documentType TransactionKind?
+  name         String
+  condition    Json              @default("{}")
+  isActive     Boolean           @default(true)
+  company      Company           @relation(fields: [companyId], references: [id])
+  steps        ApprovalStep[]
+  requests     ApprovalRequest[]
+
+  @@map("approval_rules")
+}
+
+model ApprovalStep {
+  id          String       @id @default(cuid())
+  ruleId      String
+  level       Int
+  role        Role
+  department  String?
+  minAmount   Decimal?     @db.Decimal(18, 2)
+  maxAmount   Decimal?     @db.Decimal(18, 2)
+  rule        ApprovalRule @relation(fields: [ruleId], references: [id])
+
+  @@unique([ruleId, level])
+  @@map("approval_steps")
+}
+
+model ApprovalRequest {
+  id          String              @id @default(cuid())
+  ruleId      String
+  documentId  String
+  status      ApprovalStatus      @default(PENDING)
+  currentLevel Int                @default(1)
+  requestedAt DateTime            @default(now())
+  completedAt DateTime?
+  rule        ApprovalRule        @relation(fields: [ruleId], references: [id])
+  document    TransactionDocument @relation(fields: [documentId], references: [id])
+  history     ApprovalHistory[]
+
+  @@unique([ruleId, documentId])
+  @@map("approval_requests")
+}
+
+model ApprovalHistory {
+  id          String          @id @default(cuid())
+  requestId   String
+  userId      String
+  action      ApprovalStatus
+  level       Int
+  remarks     String?
+  createdAt   DateTime        @default(now())
+  request     ApprovalRequest @relation(fields: [requestId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
+
+  @@map("approval_history")
+}
+
+model DocumentNumberingSeries {
+  id           String          @id @default(cuid())
+  companyId    String
+  module       ModuleCode
+  documentType TransactionKind
+  prefix       String
+  nextNumber   Int             @default(1)
+  padding      Int             @default(5)
+  resetPolicy  String          @default("YEARLY")
+  isActive     Boolean         @default(true)
+  company      Company         @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, documentType, prefix])
+  @@map("document_numbering_series")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  clientId    String?
+  companyId   String?
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  companyId   String
+  sku         String
+  name        String
+  itemType    String
+  uom         String
+  reorderLevel Decimal @default(0) @db.Decimal(18, 4)
+  standardCost Decimal @default(0) @db.Decimal(18, 4)
+  isActive    Boolean  @default(true)
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, sku])
+  @@map("items")
+}
+
+model Supplier {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String
+  name        String
+  email       String?
+  phone       String?
+  paymentTerms String?
+  isActive    Boolean  @default(true)
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, code])
+  @@map("suppliers")
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String
+  name        String
+  email       String?
+  phone       String?
+  creditLimit Decimal @default(0) @db.Decimal(18, 2)
+  isActive    Boolean  @default(true)
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, code])
+  @@map("customers")
+}
+
+model TransactionDocument {
+  id          String          @id @default(cuid())
+  companyId   String
+  module      ModuleCode
+  kind        TransactionKind
+  documentNo  String
+  status      String
+  amount      Decimal         @default(0) @db.Decimal(18, 2)
+  currency    String          @default("USD")
+  payload     Json            @default("{}")
+  createdById String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  company     Company         @relation(fields: [companyId], references: [id])
+  createdBy   User?           @relation("DocumentCreator", fields: [createdById], references: [id])
+  parentLinks TransactionLink[] @relation("ParentDocument")
+  childLinks  TransactionLink[] @relation("ChildDocument")
+  approvalRequests ApprovalRequest[]
+
+  @@unique([companyId, documentNo])
+  @@index([module, kind, status])
+  @@map("transaction_documents")
+}
+
+model TransactionLink {
+  id          String              @id @default(cuid())
+  parentId    String
+  childId     String
+  relationType String             @default("NEXT_STEP")
+  createdAt   DateTime            @default(now())
+  parent      TransactionDocument @relation("ParentDocument", fields: [parentId], references: [id])
+  child       TransactionDocument @relation("ChildDocument", fields: [childId], references: [id])
+
+  @@unique([parentId, childId, relationType])
+  @@map("transaction_links")
+}
+
+model ChartOfAccount {
+  id          String          @id @default(cuid())
+  companyId   String
+  code        String
+  name        String
+  accountType String
+  parentId    String?
+  isPosting   Boolean         @default(true)
+  company     Company         @relation(fields: [companyId], references: [id])
+  parent      ChartOfAccount? @relation("AccountTree", fields: [parentId], references: [id])
+  children    ChartOfAccount[] @relation("AccountTree")
+  journalLines JournalLine[]
+
+  @@unique([companyId, code])
+  @@map("chart_of_accounts")
+}
+
+model JournalEntry {
+  id          String        @id @default(cuid())
+  companyId   String
+  entryNo     String
+  postingDate DateTime
+  memo        String?
+  sourceDocumentId String?
+  company     Company       @relation(fields: [companyId], references: [id])
+  lines       JournalLine[]
+
+  @@unique([companyId, entryNo])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id          String         @id @default(cuid())
+  entryId     String
+  accountId   String
+  debit       Decimal        @default(0) @db.Decimal(18, 2)
+  credit      Decimal        @default(0) @db.Decimal(18, 2)
+  costCenter  String?
+  entry       JournalEntry   @relation(fields: [entryId], references: [id])
+  account     ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@map("journal_lines")
+}
