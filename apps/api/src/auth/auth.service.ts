@@ -11,12 +11,19 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: { client: true, company: true, branch: true }
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      include: {
+        tenant: true,
+        company: true,
+        branch: true,
+        userRoles: {
+          include: { role: { include: { permissions: { include: { permission: true } } } } }
+        }
+      }
     });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || user.isDeleted || user.status !== 'ACTIVE') {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -25,23 +32,34 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const roles = user.userRoles.filter((assignment) => assignment.role.isActive).map((assignment) => assignment.role.roleCode);
+    const permissions = [...new Set(user.userRoles.flatMap((assignment) =>
+      assignment.role.permissions.filter((entry) => entry.allowed).map((entry) => entry.permission.permissionCode)
+    ))];
     const payload = {
       sub: user.id,
       email: user.email,
-      roles: user.roles,
-      clientId: user.clientId,
-      companyId: user.companyId,
-      branchId: user.branchId
+      roles,
+      permissions,
+      tenantId: user.tenantId,
+      clientId: user.tenantId,
+      companyId: user.defaultCompanyId,
+      branchId: user.defaultBranchId
     };
+
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 
     return {
       accessToken: await this.jwt.signAsync(payload),
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
-        roles: user.roles,
-        client: user.client,
+        name: user.fullName,
+        fullName: user.fullName,
+        roles,
+        permissions,
+        tenant: user.tenant,
+        client: user.tenant,
         company: user.company,
         branch: user.branch
       }
@@ -54,11 +72,12 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        name: true,
-        roles: true,
-        client: true,
+        fullName: true,
+        legacyRoles: true,
+        tenant: true,
         company: true,
-        branch: true
+        branch: true,
+        userRoles: { include: { role: true } }
       }
     });
   }
