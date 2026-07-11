@@ -13,6 +13,7 @@
     "dev:web": "npm run dev -w @flowcraft/web",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
     "prisma:generate": "npm run prisma:generate -w @flowcraft/api",
     "prisma:migrate": "npm run prisma:migrate -w @flowcraft/api",
     "prisma:seed": "npm run prisma:seed -w @flowcraft/api"
