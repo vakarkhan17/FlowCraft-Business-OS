@@ -1,11 +1,15 @@
 import Link from 'next/link';
-import { BarChart3, Boxes, Factory, FileText, LayoutTemplate, Settings, ShieldCheck, Workflow } from 'lucide-react';
+import { BarChart3, Boxes, Building2, Coins, Factory, FileText, GitBranch, LayoutTemplate, Settings, ShieldCheck, Workflow } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
   { href: '/customization', label: 'Customization', icon: Settings },
-  { href: '/customization#workflow', label: 'Workflows', icon: Workflow },
+  { href: '/settings/companies', label: 'Companies', icon: Building2 },
+  { href: '/settings/branches', label: 'Branches', icon: GitBranch },
+  { href: '/settings/currencies', label: 'Currencies', icon: Coins },
+  { href: '/studio/object-registry', label: 'Object Registry', icon: Boxes },
+  { href: '/studio/workflows', label: 'Workflows', icon: Workflow },
   { href: '/customization#print', label: 'Print Layouts', icon: LayoutTemplate },
   { href: '/customization#reports', label: 'Reports', icon: FileText },
   { href: '/dashboard#inventory', label: 'Inventory', icon: Boxes },

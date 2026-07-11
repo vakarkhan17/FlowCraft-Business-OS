@@ -15,7 +15,7 @@ export default function LoginPage() {
     event.preventDefault();
     setError('');
 
-    const response = await fetch(`${API_URL}/api/auth/login`, {
+    const response = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -28,6 +28,7 @@ export default function LoginPage() {
 
     const data = await response.json();
     localStorage.setItem('flowcraft_token', data.accessToken);
+    localStorage.setItem('flowcraft_user', JSON.stringify(data.user));
     router.push('/dashboard');
   }
 
