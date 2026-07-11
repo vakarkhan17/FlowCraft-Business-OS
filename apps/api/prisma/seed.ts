@@ -1,339 +1,109 @@
-import { PrismaClient, ModuleCode, Role, FieldType, TransactionKind } from '@prisma/client';
+import { ModuleCode, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  const passwordHash = await bcrypt.hash('FlowCraft123!', 10);
+const roles = [
+  ['SUPER_ADMIN', 'Super Admin'], ['SYSTEM_ADMINISTRATOR', 'System Administrator'], ['CEO', 'CEO'],
+  ['FINANCE_MANAGER', 'Finance Manager'], ['PURCHASE_MANAGER', 'Purchase Manager'], ['SALES_MANAGER', 'Sales Manager'],
+  ['PRODUCTION_MANAGER', 'Production Manager'], ['PLANNING_MANAGER', 'Planning Manager'], ['WAREHOUSE_MANAGER', 'Warehouse Manager'],
+  ['QUALITY_MANAGER', 'Quality Manager'], ['MAINTENANCE_MANAGER', 'Maintenance Manager'], ['ENGINEERING_MANAGER', 'Engineering Manager'],
+  ['AUDITOR', 'Auditor'], ['STANDARD_USER', 'Standard User']
+] as const;
 
-  const client = await prisma.client.upsert({
-    where: { code: 'FLOWCRAFT-DEMO' },
-    update: {},
-    create: {
-      code: 'FLOWCRAFT-DEMO',
-      name: 'FlowCraft Demo Group',
-      settings: {
-        create: [
-          { key: 'dateFormat', value: 'DD-MMM-YYYY' },
-          { key: 'timezone', value: 'Asia/Dubai' },
-          { key: 'documentHistoryMode', value: 'immutable-links' }
-        ]
-      }
-    }
+const objectRegister = [
+  ['TENANT', 'Tenant', 'PLATFORM'], ['CURRENCY', 'Currency', 'FINANCE'], ['EXCHANGE_RATE', 'Exchange Rate', 'FINANCE'],
+  ['COMPANY', 'Company', 'ORGANIZATION'], ['BRANCH', 'Branch', 'ORGANIZATION'], ['WAREHOUSE', 'Warehouse', 'WAREHOUSE'],
+  ['USER', 'User', 'SECURITY'], ['ROLE', 'Role', 'SECURITY'], ['PERMISSION', 'Permission', 'SECURITY'],
+  ['ENTERPRISE_OBJECT', 'Enterprise Object', 'PLATFORM'], ['OBJECT_FIELD', 'Object Field', 'PLATFORM'], ['OBJECT_RELATIONSHIP', 'Object Relationship', 'PLATFORM'],
+  ['WORKFLOW_DEFINITION', 'Workflow Definition', 'WORKFLOW'], ['NUMBER_SERIES', 'Number Series', 'PLATFORM'], ['AUDIT_LOG', 'Audit Log', 'SECURITY'],
+  ['ITEM', 'Item', 'INVENTORY'], ['ITEM_CATEGORY', 'Item Category', 'INVENTORY'], ['UNIT_OF_MEASURE', 'Unit of Measure', 'INVENTORY'],
+  ['SUPPLIER', 'Supplier', 'PURCHASING'], ['CUSTOMER', 'Customer', 'SALES'], ['PURCHASE_REQUEST', 'Purchase Request', 'PURCHASING'],
+  ['REQUEST_FOR_QUOTATION', 'Request for Quotation', 'PURCHASING'], ['SUPPLIER_QUOTATION', 'Supplier Quotation', 'PURCHASING'],
+  ['PURCHASE_ORDER', 'Purchase Order', 'PURCHASING'], ['GOODS_RECEIPT', 'Goods Receipt', 'PURCHASING'], ['SUPPLIER_INVOICE', 'Supplier Invoice', 'FINANCE'],
+  ['PAYMENT', 'Payment', 'FINANCE'], ['SALES_INQUIRY', 'Sales Inquiry', 'SALES'], ['SALES_QUOTATION', 'Sales Quotation', 'SALES'],
+  ['SALES_ORDER', 'Sales Order', 'SALES'], ['DELIVERY_NOTE', 'Delivery Note', 'SALES'], ['SALES_INVOICE', 'Sales Invoice', 'FINANCE'],
+  ['RECEIPT', 'Receipt', 'FINANCE'], ['BILL_OF_MATERIALS', 'Bill of Materials', 'MANUFACTURING'], ['ROUTING', 'Routing', 'MANUFACTURING'],
+  ['WORK_CENTER', 'Work Center', 'MANUFACTURING'], ['PRODUCTION_PLAN', 'Production Plan', 'MANUFACTURING'], ['WORK_ORDER', 'Work Order', 'MANUFACTURING'],
+  ['MATERIAL_ISSUE', 'Material Issue', 'MANUFACTURING'], ['PRODUCTION_ENTRY', 'Production Entry', 'MANUFACTURING'], ['QUALITY_INSPECTION', 'Quality Inspection', 'QUALITY'],
+  ['FINISHED_GOODS_RECEIPT', 'Finished Goods Receipt', 'WAREHOUSE'], ['STOCK_TRANSFER', 'Stock Transfer', 'WAREHOUSE'], ['STOCK_ADJUSTMENT', 'Stock Adjustment', 'WAREHOUSE'],
+  ['MAINTENANCE_REQUEST', 'Maintenance Request', 'MAINTENANCE'], ['MAINTENANCE_WORK_ORDER', 'Maintenance Work Order', 'MAINTENANCE'],
+  ['ASSET', 'Asset', 'MAINTENANCE'], ['CHART_OF_ACCOUNT', 'Chart of Account', 'FINANCE'], ['JOURNAL_ENTRY', 'Journal Entry', 'FINANCE'],
+  ['FISCAL_YEAR', 'Fiscal Year', 'FINANCE']
+] as const;
+
+const actions = ['VIEW', 'CREATE', 'EDIT', 'ARCHIVE', 'APPROVE', 'REJECT', 'SUBMIT', 'CANCEL', 'IMPORT', 'EXPORT', 'CONFIGURE'] as const;
+
+async function main() {
+  const tenant = await prisma.tenant.upsert({
+    where: { tenantCode: 'FLOWCRAFT-DEMO' },
+    update: { tenantName: 'FlowCraft Demo Tenant', isActive: true, status: 'ACTIVE' },
+    create: { tenantCode: 'FLOWCRAFT-DEMO', tenantName: 'FlowCraft Demo Tenant', subscriptionPlan: 'DEVELOPMENT' }
   });
+
+  const currencies = await Promise.all([
+    ['AED', 'UAE Dirham', 'د.إ', 2], ['USD', 'US Dollar', '$', 2], ['EUR', 'Euro', '€', 2], ['INR', 'Indian Rupee', '₹', 2]
+  ].map(([code, name, symbol, decimalPlaces]) => prisma.currency.upsert({
+    where: { currencyCode: String(code) }, update: {},
+    create: { digitalDna: `FC-CUR-${code}`, currencyCode: String(code), currencyName: String(name), symbol: String(symbol), decimalPlaces: Number(decimalPlaces) }
+  })));
+  const aed = currencies.find((currency) => currency.currencyCode === 'AED')!;
 
   const company = await prisma.company.upsert({
-    where: { clientId_name: { clientId: client.id, name: 'FlowCraft Precision Manufacturing' } },
+    where: { tenantId_companyCode: { tenantId: tenant.id, companyCode: 'FCMFG' } },
     update: {},
-    create: {
-      clientId: client.id,
-      name: 'FlowCraft Precision Manufacturing',
-      legalName: 'FlowCraft Precision Manufacturing LLC',
-      taxNumber: 'TRN-100200300',
-      baseCurrency: 'USD'
-    }
+    create: { tenantId: tenant.id, digitalDna: 'FC-CMP-UAE-000001', companyCode: 'FCMFG', companyName: 'FlowCraft Manufacturing Demo', legalName: 'FlowCraft Manufacturing Demo LLC', baseCurrencyId: aed.id, countryCode: 'UAE' }
   });
-
   const branch = await prisma.branch.upsert({
-    where: { companyId_code: { companyId: company.id, code: 'DXB' } },
+    where: { companyId_branchCode: { companyId: company.id, branchCode: 'HO' } },
     update: {},
-    create: {
-      companyId: company.id,
-      code: 'DXB',
-      name: 'Dubai Manufacturing Plant',
-      address: 'Industrial Area 4'
-    }
+    create: { tenantId: tenant.id, companyId: company.id, digitalDna: 'FC-BRN-FCMFG-000001', branchCode: 'HO', branchName: 'Head Office', branchType: 'HEAD_OFFICE', countryCode: 'UAE' }
   });
 
-  await prisma.warehouse.upsert({
-    where: { companyId_code: { companyId: company.id, code: 'MAIN' } },
-    update: {},
-    create: {
-      companyId: company.id,
-      branchId: branch.id,
-      code: 'MAIN',
-      name: 'Main Raw Material Warehouse'
-    }
-  });
+  await prisma.warehouse.upsert({ where: { companyId_code: { companyId: company.id, code: 'MAIN' } }, update: {}, create: { companyId: company.id, branchId: branch.id, code: 'MAIN', name: 'Main Warehouse' } });
+  await prisma.moduleSetting.createMany({ data: Object.values(ModuleCode).map((module) => ({ clientId: tenant.id, module, enabled: true, settings: {} })), skipDuplicates: true });
 
+  const roleRecords = await Promise.all(roles.map(([roleCode, roleName]) => prisma.accessRole.upsert({
+    where: { tenantId_roleCode: { tenantId: tenant.id, roleCode } }, update: { roleName, isActive: true },
+    create: { tenantId: tenant.id, roleCode, roleName, roleType: roleCode === 'SUPER_ADMIN' ? 'SYSTEM' : 'STANDARD' }
+  })));
+
+  const objects = await Promise.all(objectRegister.map(([objectCode, objectName, ownerModule]) => prisma.enterpriseObject.upsert({
+    where: { objectCode }, update: { objectName, ownerModule },
+    create: { objectCode, objectName, objectType: objectCode.includes('ORDER') || objectCode.includes('INVOICE') || objectCode.includes('ENTRY') ? 'TRANSACTION' : 'MASTER', objectCategory: ownerModule, objectFamily: ownerModule, ownerModule, framework: 'FEOM-002', tableName: objectCode.toLowerCase(), apiPath: `/api/v1/${objectCode.toLowerCase().replaceAll('_', '-')}`, supportsWorkflow: ['PURCHASE_ORDER', 'SALES_ORDER', 'WORK_ORDER'].includes(objectCode), supportsCustomFields: true, supportsImport: true, supportsExport: true, supportsPrint: true }
+  })));
+
+  await prisma.permission.createMany({ data: objects.flatMap((object) => actions.map((action) => ({ permissionCode: `${object.objectCode}.${action}`, permissionName: `${action} ${object.objectName}`, enterpriseObjectId: object.id, action: action.toLowerCase(), description: `${action} access for ${object.objectName}` }))), skipDuplicates: true });
+  const allPermissions = await prisma.permission.findMany({ select: { id: true } });
+  const superAdminRole = roleRecords.find((role) => role.roleCode === 'SUPER_ADMIN')!;
+  await prisma.rolePermission.createMany({ data: allPermissions.map((permission) => ({ tenantId: tenant.id, roleId: superAdminRole.id, permissionId: permission.id, allowed: true })), skipDuplicates: true });
+
+  const email = (process.env.SEED_ADMIN_EMAIL ?? 'admin@flowcraft.local').toLowerCase();
+  const password = process.env.SEED_ADMIN_PASSWORD ?? 'FlowCraft123!';
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@flowcraft.local' },
-    update: { passwordHash },
-    create: {
-      clientId: client.id,
-      companyId: company.id,
-      branchId: branch.id,
-      email: 'admin@flowcraft.local',
-      name: 'FlowCraft Admin',
-      passwordHash,
-      roles: [Role.SUPER_ADMIN, Role.ADMIN, Role.FINANCE, Role.PURCHASING, Role.SALES]
-    }
+    where: { tenantId_email: { tenantId: tenant.id, email } },
+    update: { passwordHash: await bcrypt.hash(password, 12), isActive: true, isDeleted: false, status: 'ACTIVE' },
+    create: { tenantId: tenant.id, digitalDna: 'FC-USR-FLOWCRAFTDEMO-000001', username: 'admin', email, passwordHash: await bcrypt.hash(password, 12), fullName: 'FlowCraft Administrator', defaultCompanyId: company.id, defaultBranchId: branch.id }
+  });
+  await prisma.companyAccess.upsert({ where: { tenantId_userId_companyId: { tenantId: tenant.id, userId: admin.id, companyId: company.id } }, update: {}, create: { tenantId: tenant.id, userId: admin.id, companyId: company.id } });
+  await prisma.branchAccess.upsert({ where: { tenantId_userId_branchId: { tenantId: tenant.id, userId: admin.id, branchId: branch.id } }, update: {}, create: { tenantId: tenant.id, userId: admin.id, companyId: company.id, branchId: branch.id } });
+  const existingAssignment = await prisma.userRole.findFirst({ where: { tenantId: tenant.id, userId: admin.id, roleId: superAdminRole.id, companyId: company.id, branchId: branch.id } });
+  if (!existingAssignment) await prisma.userRole.create({ data: { tenantId: tenant.id, userId: admin.id, roleId: superAdminRole.id, companyId: company.id, branchId: branch.id } });
+
+  const companyObject = objects.find((object) => object.objectCode === 'COMPANY')!;
+  await prisma.numberSeries.upsert({
+    where: { id: '00000000-0000-4000-8000-000000000001' }, update: {},
+    create: { id: '00000000-0000-4000-8000-000000000001', tenantId: tenant.id, companyId: company.id, branchId: branch.id, enterpriseObjectId: companyObject.id, seriesCode: 'COMPANY', prefix: 'CMP-', paddingLength: 6 }
   });
 
-  await prisma.moduleSetting.createMany({
-    data: Object.values(ModuleCode).map((module) => ({
-      clientId: client.id,
-      module,
-      enabled: true,
-      settings: { owner: module === ModuleCode.ACCOUNTING ? 'Finance' : 'Operations' }
-    })),
-    skipDuplicates: true
-  });
-
-  await prisma.customField.createMany({
-    data: [
-      {
-        companyId: company.id,
-        module: ModuleCode.PURCHASING,
-        entityName: 'PURCHASE_ORDER',
-        fieldKey: 'machineLine',
-        label: 'Machine Line',
-        fieldType: FieldType.SELECT,
-        options: ['Line A', 'Line B', 'Line C'],
-        sortOrder: 10
-      },
-      {
-        companyId: company.id,
-        module: ModuleCode.QUALITY,
-        entityName: 'QC_INSPECTION',
-        fieldKey: 'inspectionGauge',
-        label: 'Inspection Gauge',
-        fieldType: FieldType.TEXT,
-        isRequired: true,
-        sortOrder: 20
-      }
-    ],
-    skipDuplicates: true
-  });
-
-  const purchaseWorkflow = await prisma.workflowDefinition.upsert({
-    where: {
-      companyId_module_name_version: {
-        companyId: company.id,
-        module: ModuleCode.PURCHASING,
-        name: 'Standard Purchase Flow',
-        version: 1
-      }
-    },
-    update: {},
-    create: {
-      companyId: company.id,
-      module: ModuleCode.PURCHASING,
-      name: 'Standard Purchase Flow',
-      description: 'Purchase Request to Payment with optional RFQ step'
-    }
-  });
-
-  await prisma.workflowStep.createMany({
-    data: [
-      { workflowId: purchaseWorkflow.id, code: 'PR', name: 'Purchase Request', stepOrder: 1 },
-      { workflowId: purchaseWorkflow.id, code: 'RFQ', name: 'RFQ', stepOrder: 2 },
-      { workflowId: purchaseWorkflow.id, code: 'PO', name: 'Purchase Order', stepOrder: 3 },
-      { workflowId: purchaseWorkflow.id, code: 'GRN', name: 'GRN', stepOrder: 4 },
-      { workflowId: purchaseWorkflow.id, code: 'INV', name: 'Supplier Invoice', stepOrder: 5 },
-      { workflowId: purchaseWorkflow.id, code: 'PAY', name: 'Payment', stepOrder: 6 }
-    ],
-    skipDuplicates: true
-  });
-
-  const steps = await prisma.workflowStep.findMany({ where: { workflowId: purchaseWorkflow.id } });
-  const stepByCode = new Map(steps.map((step) => [step.code, step.id]));
-  for (const [from, to, sortOrder] of [
-    ['PR', 'RFQ', 1],
-    ['RFQ', 'PO', 2],
-    ['PO', 'GRN', 3],
-    ['GRN', 'INV', 4],
-    ['INV', 'PAY', 5]
-  ] as const) {
-    await prisma.workflowTransition.create({
-      data: {
-        workflowId: purchaseWorkflow.id,
-        fromStepId: stepByCode.get(from),
-        toStepId: stepByCode.get(to),
-        sortOrder
-      }
-    }).catch(() => undefined);
-  }
-
-  await prisma.printLayoutTemplate.upsert({
-    where: {
-      companyId_documentType_name_version: {
-        companyId: company.id,
-        documentType: TransactionKind.PURCHASE_ORDER,
-        name: 'Modern Purchase Order',
-        version: 1
-      }
-    },
-    update: {},
-    create: {
-      companyId: company.id,
-      documentType: TransactionKind.PURCHASE_ORDER,
-      name: 'Modern Purchase Order',
-      isDefault: true,
-      canvas: { size: 'A4', orientation: 'portrait', margin: 24 },
-      sections: {
-        create: [
-          { sectionKey: 'header', label: 'Header', position: { x: 24, y: 24, w: 545, h: 96 }, content: { logo: true, title: 'Purchase Order' } },
-          { sectionKey: 'lines', label: 'Item Table', position: { x: 24, y: 180, w: 545, h: 360 }, dataBinding: 'document.lines' },
-          { sectionKey: 'signature', label: 'Signature Block', position: { x: 360, y: 700, w: 190, h: 70 }, content: { qr: true, signature: true } }
-        ]
-      }
-    }
-  });
-
-  await prisma.reportDefinition.upsert({
-    where: { companyId_name: { companyId: company.id, name: 'Monthly Purchase Summary' } },
-    update: {},
-    create: {
-      companyId: company.id,
-      module: ModuleCode.PURCHASING,
-      name: 'Monthly Purchase Summary',
-      baseEntity: 'transaction_documents',
-      description: 'Purchase totals by status and month',
-      fields: {
-        create: [
-          { fieldPath: 'documentNo', label: 'Document No', dataType: FieldType.TEXT, sortOrder: 1 },
-          { fieldPath: 'status', label: 'Status', dataType: FieldType.TEXT, sortOrder: 2, grouping: true },
-          { fieldPath: 'amount', label: 'Amount', dataType: FieldType.NUMBER, sortOrder: 3, aggregation: 'SUM' }
-        ]
-      },
-      filters: {
-        create: [
-          { fieldPath: 'createdAt', operator: 'between', isRequired: true },
-          { fieldPath: 'kind', operator: 'in', value: [TransactionKind.PURCHASE_ORDER, TransactionKind.GRN] }
-        ]
-      }
-    }
-  });
-
-  const approvalRule = await prisma.approvalRule.create({
-    data: {
-      companyId: company.id,
-      module: ModuleCode.PURCHASING,
-      documentType: TransactionKind.PURCHASE_ORDER,
-      name: 'PO Amount Approval',
-      condition: { amountGte: 5000 },
-      steps: {
-        create: [
-          { level: 1, role: Role.MANAGER, maxAmount: 25000 },
-          { level: 2, role: Role.FINANCE, minAmount: 25000 }
-        ]
-      }
-    }
-  }).catch(async () => {
-    const existing = await prisma.approvalRule.findFirstOrThrow({
-      where: { companyId: company.id, name: 'PO Amount Approval' }
-    });
-    return existing;
-  });
-
-  await prisma.item.createMany({
-    data: [
-      { companyId: company.id, sku: 'RM-AL-6061', name: 'Aluminium 6061 Bar', itemType: 'RAW_MATERIAL', uom: 'KG', reorderLevel: 500, standardCost: 4.8 },
-      { companyId: company.id, sku: 'FG-VALVE-100', name: 'Precision Valve Assembly', itemType: 'FINISHED_GOOD', uom: 'EA', reorderLevel: 50, standardCost: 42.5 }
-    ],
-    skipDuplicates: true
-  });
-
-  await prisma.supplier.createMany({
-    data: [
-      { companyId: company.id, code: 'SUP-001', name: 'Gulf Metals Supply', email: 'supply@example.com', paymentTerms: 'Net 30' }
-    ],
-    skipDuplicates: true
-  });
-
-  await prisma.customer.createMany({
-    data: [
-      { companyId: company.id, code: 'CUS-001', name: 'Apex Industrial Systems', email: 'buying@example.com', creditLimit: 150000 }
-    ],
-    skipDuplicates: true
-  });
-
-  const pr = await prisma.transactionDocument.upsert({
-    where: { companyId_documentNo: { companyId: company.id, documentNo: 'PR-2026-00001' } },
-    update: {},
-    create: {
-      companyId: company.id,
-      module: ModuleCode.PURCHASING,
-      kind: TransactionKind.PURCHASE_REQUEST,
-      documentNo: 'PR-2026-00001',
-      status: 'APPROVED',
-      amount: 12500,
-      createdById: admin.id,
-      payload: { department: 'Production', purpose: 'Raw material replenishment' }
-    }
-  });
-
-  const po = await prisma.transactionDocument.upsert({
-    where: { companyId_documentNo: { companyId: company.id, documentNo: 'PO-2026-00001' } },
-    update: {},
-    create: {
-      companyId: company.id,
-      module: ModuleCode.PURCHASING,
-      kind: TransactionKind.PURCHASE_ORDER,
-      documentNo: 'PO-2026-00001',
-      status: 'PENDING_APPROVAL',
-      amount: 12500,
-      createdById: admin.id,
-      payload: { supplier: 'Gulf Metals Supply', lines: [{ sku: 'RM-AL-6061', qty: 2500, rate: 5 }] }
-    }
-  });
-
-  await prisma.transactionLink.upsert({
-    where: { parentId_childId_relationType: { parentId: pr.id, childId: po.id, relationType: 'CONVERTED_TO' } },
-    update: {},
-    create: { parentId: pr.id, childId: po.id, relationType: 'CONVERTED_TO' }
-  });
-
-  await prisma.approvalRequest.create({
-    data: {
-      ruleId: approvalRule.id,
-      documentId: po.id,
-      status: 'PENDING',
-      currentLevel: 1
-    }
-  }).catch(() => undefined);
-
-  const accounts = await Promise.all([
-    upsertAccount(company.id, '1000', 'Cash and Bank', 'ASSET'),
-    upsertAccount(company.id, '1200', 'Accounts Receivable', 'ASSET'),
-    upsertAccount(company.id, '2000', 'Accounts Payable', 'LIABILITY'),
-    upsertAccount(company.id, '4000', 'Sales Revenue', 'INCOME'),
-    upsertAccount(company.id, '5000', 'Cost of Goods Sold', 'EXPENSE')
-  ]);
-
-  const sales = accounts.find((account) => account.code === '4000')!;
-  const receivable = accounts.find((account) => account.code === '1200')!;
-  await prisma.journalEntry.upsert({
-    where: { companyId_entryNo: { companyId: company.id, entryNo: 'JE-2026-00001' } },
-    update: {},
-    create: {
-      companyId: company.id,
-      entryNo: 'JE-2026-00001',
-      postingDate: new Date('2026-07-01T00:00:00.000Z'),
-      memo: 'Opening demo sales invoice',
-      lines: {
-        create: [
-          { accountId: receivable.id, debit: 62500, credit: 0, costCenter: 'Production' },
-          { accountId: sales.id, debit: 0, credit: 62500, costCenter: 'Production' }
-        ]
-      }
-    }
-  });
+  await prisma.item.createMany({ data: [
+    { companyId: company.id, sku: 'RM-AL-6061', name: 'Aluminium 6061 Bar', itemType: 'RAW_MATERIAL', uom: 'KG', reorderLevel: 500, standardCost: 4.8 },
+    { companyId: company.id, sku: 'FG-VALVE-100', name: 'Precision Valve Assembly', itemType: 'FINISHED_GOOD', uom: 'EA', reorderLevel: 50, standardCost: 42.5 }
+  ], skipDuplicates: true });
 }
 
-async function upsertAccount(companyId: string, code: string, name: string, accountType: string) {
-  return prisma.chartOfAccount.upsert({
-    where: { companyId_code: { companyId, code } },
-    update: {},
-    create: { companyId, code, name, accountType }
-  });
-}
-
-main()
-  .then(async () => prisma.$disconnect())
-  .catch(async (error) => {
-    console.error(error);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
+main().then(() => prisma.$disconnect()).catch(async (error: unknown) => {
+  console.error(error);
+  await prisma.$disconnect();
+  process.exit(1);
+});
