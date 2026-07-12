@@ -84,48 +84,68 @@ enum ApprovalStatus {
 }
 
 model Tenant {
-  id               String               @id @default(uuid()) @db.Uuid
-  tenantCode       String               @unique @map("tenant_code")
-  tenantName       String               @map("tenant_name")
-  status           String               @default("ACTIVE")
-  subscriptionPlan String?              @map("subscription_plan")
-  isActive         Boolean              @default(true) @map("is_active")
-  createdAt        DateTime             @default(now()) @map("created_at")
-  updatedAt        DateTime             @updatedAt @map("updated_at")
-  companies        Company[]
-  branches         Branch[]
-  users            User[]
-  settings         ClientSetting[]
-  moduleSettings   ModuleSetting[]
-  exchangeRates    ExchangeRate[]
-  roles            AccessRole[]
-  rolePermissions  RolePermission[]
-  userRoles        UserRole[]
-  companyAccesses  CompanyAccess[]
-  branchAccesses   BranchAccess[]
-  workflows        WorkflowDefinition[]
-  numberSeries     NumberSeries[]
-  auditLogs        AuditLog[]
+  id                              String                            @id @default(uuid()) @db.Uuid
+  tenantCode                      String                            @unique @map("tenant_code")
+  tenantName                      String                            @map("tenant_name")
+  status                          String                            @default("ACTIVE")
+  subscriptionPlan                String?                           @map("subscription_plan")
+  isActive                        Boolean                           @default(true) @map("is_active")
+  createdAt                       DateTime                          @default(now()) @map("created_at")
+  updatedAt                       DateTime                          @updatedAt @map("updated_at")
+  companies                       Company[]
+  branches                        Branch[]
+  users                           User[]
+  settings                        ClientSetting[]
+  moduleSettings                  ModuleSetting[]
+  exchangeRates                   ExchangeRate[]
+  roles                           AccessRole[]
+  rolePermissions                 RolePermission[]
+  userRoles                       UserRole[]
+  companyAccesses                 CompanyAccess[]
+  branchAccesses                  BranchAccess[]
+  workflows                       WorkflowDefinition[]
+  numberSeries                    NumberSeries[]
+  auditLogs                       AuditLog[]
+  enterpriseGroups                EnterpriseGroup[]
+  legalEntities                   LegalEntity[]
+  plants                          Plant[]
+  businessUnits                   BusinessUnit[]
+  divisions                       Division[]
+  departments                     Department[]
+  sections                        Section[]
+  teams                           Team[]
+  locations                       Location[]
+  costCenters                     CostCenter[]
+  profitCenters                   ProfitCenter[]
+  organizationNodes               OrganizationNode[]
+  organizationRelationshipHistory OrganizationRelationshipHistory[]
+  organizationInheritancePolicies OrganizationInheritancePolicy[]
+  organizationSettingOverrides    OrganizationSettingOverride[]
+  userOrganizationAccess          UserOrganizationAccess[]
 
   @@map("tenants")
 }
 
 model Currency {
-  id            String         @id @default(uuid()) @db.Uuid
-  digitalDna    String         @unique @map("digital_dna")
-  currencyCode  String         @unique @map("currency_code")
-  currencyName  String         @map("currency_name")
-  symbol        String?
-  decimalPlaces Int            @default(2) @map("decimal_places")
-  roundingRule  String         @default("HALF_UP") @map("rounding_rule")
-  isBaseAllowed Boolean        @default(true) @map("is_base_allowed")
-  status        String         @default("ACTIVE")
-  isActive      Boolean        @default(true) @map("is_active")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  baseCompanies Company[]
-  fromRates     ExchangeRate[] @relation("FromCurrency")
-  toRates       ExchangeRate[] @relation("ToCurrency")
+  id                   String            @id @default(uuid()) @db.Uuid
+  digitalDna           String            @unique @map("digital_dna")
+  currencyCode         String            @unique @map("currency_code")
+  currencyName         String            @map("currency_name")
+  symbol               String?
+  decimalPlaces        Int               @default(2) @map("decimal_places")
+  roundingRule         String            @default("HALF_UP") @map("rounding_rule")
+  isBaseAllowed        Boolean           @default(true) @map("is_base_allowed")
+  status               String            @default("ACTIVE")
+  isActive             Boolean           @default(true) @map("is_active")
+  createdAt            DateTime          @default(now()) @map("created_at")
+  updatedAt            DateTime          @updatedAt @map("updated_at")
+  baseCompanies        Company[]
+  fromRates            ExchangeRate[]    @relation("FromCurrency")
+  toRates              ExchangeRate[]    @relation("ToCurrency")
+  enterpriseGroupBases EnterpriseGroup[]
+  legalEntityBases     LegalEntity[]     @relation("LegalEntityBaseCurrency")
+  legalEntityReporting LegalEntity[]     @relation("LegalEntityReportingCurrency")
+  companyReporting     Company[]         @relation("CompanyReportingCurrency")
 
   @@map("currencies")
 }
@@ -184,8 +204,25 @@ model Company {
   deletedById           String?               @map("deleted_by_id") @db.Uuid
   deletedAt             DateTime?             @map("deleted_at")
   deletionReason        String?               @map("deletion_reason")
+  legalEntityId         String?               @map("legal_entity_id") @db.Uuid
+  enterpriseGroupId     String?               @map("enterprise_group_id") @db.Uuid
+  parentCompanyId       String?               @map("parent_company_id") @db.Uuid
+  companyType           String                @default("OPERATING_COMPANY") @map("company_type")
+  reportingCurrencyId   String?               @map("reporting_currency_id") @db.Uuid
+  fiscalCalendarId      String?               @map("fiscal_calendar_id") @db.Uuid
+  timezone              String                @default("UTC")
+  locale                String                @default("en")
+  hierarchyPath         String                @default("/") @map("hierarchy_path")
+  hierarchyLevel        Int                   @default(0) @map("hierarchy_level")
+  effectiveFrom         DateTime              @default(now()) @map("effective_from")
+  effectiveTo           DateTime?             @map("effective_to")
   tenant                Tenant                @relation(fields: [tenantId], references: [id])
   baseCurrency          Currency              @relation(fields: [baseCurrencyId], references: [id])
+  reportingCurrency     Currency?             @relation("CompanyReportingCurrency", fields: [reportingCurrencyId], references: [id])
+  legalEntity           LegalEntity?          @relation(fields: [legalEntityId], references: [id])
+  enterpriseGroup       EnterpriseGroup?      @relation(fields: [enterpriseGroupId], references: [id])
+  parentCompany         Company?              @relation("CompanyHierarchy", fields: [parentCompanyId], references: [id])
+  childCompanies        Company[]             @relation("CompanyHierarchy")
   branches              Branch[]
   warehouses            Warehouse[]
   users                 User[]
@@ -205,6 +242,16 @@ model Company {
   documents             TransactionDocument[]
   chartOfAccounts       ChartOfAccount[]
   journalEntries        JournalEntry[]
+  plants                Plant[]
+  businessUnits         BusinessUnit[]
+  divisions             Division[]
+  departments           Department[]
+  sections              Section[]
+  teams                 Team[]
+  locations             Location[]
+  costCenters           CostCenter[]
+  profitCenters         ProfitCenter[]
+  organizationNodes     OrganizationNode[]
 
   @@unique([tenantId, companyCode])
   @@index([tenantId, status, isDeleted])
@@ -237,18 +284,535 @@ model Branch {
   deletedById    String?        @map("deleted_by_id") @db.Uuid
   deletedAt      DateTime?      @map("deleted_at")
   deletionReason String?        @map("deletion_reason")
+  parentBranchId String?        @map("parent_branch_id") @db.Uuid
+  plantId        String?        @map("plant_id") @db.Uuid
+  hierarchyPath  String         @default("/") @map("hierarchy_path")
+  hierarchyLevel Int            @default(0) @map("hierarchy_level")
+  timezone       String?
+  effectiveFrom  DateTime       @default(now()) @map("effective_from")
+  effectiveTo    DateTime?      @map("effective_to")
   tenant         Tenant         @relation(fields: [tenantId], references: [id])
   company        Company        @relation(fields: [companyId], references: [id])
+  parentBranch   Branch?        @relation("BranchHierarchy", fields: [parentBranchId], references: [id])
+  childBranches  Branch[]       @relation("BranchHierarchy")
+  primaryPlant   Plant?         @relation("BranchPrimaryPlant", fields: [plantId], references: [id])
+  plants         Plant[]        @relation("PlantBranch")
   warehouses     Warehouse[]
   users          User[]
   userRoles      UserRole[]
   branchAccesses BranchAccess[]
   numberSeries   NumberSeries[]
   auditLogs      AuditLog[]
+  locations      Location[]
 
   @@unique([companyId, branchCode])
   @@index([tenantId, companyId, status, isDeleted])
   @@map("branches")
+}
+
+model EnterpriseGroup {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  digitalDna     String        @unique @map("digital_dna")
+  groupCode      String        @map("group_code")
+  groupName      String        @map("group_name")
+  legalName      String?       @map("legal_name")
+  description    String?
+  baseCurrencyId String?       @map("base_currency_id") @db.Uuid
+  countryCode    String?       @map("country_code")
+  status         String        @default("ACTIVE")
+  isActive       Boolean       @default(true) @map("is_active")
+  isDeleted      Boolean       @default(false) @map("is_deleted")
+  effectiveFrom  DateTime      @default(now()) @map("effective_from")
+  effectiveTo    DateTime?     @map("effective_to")
+  createdById    String?       @map("created_by_id") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedById    String?       @map("updated_by_id") @db.Uuid
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  deletedById    String?       @map("deleted_by_id") @db.Uuid
+  deletedAt      DateTime?     @map("deleted_at")
+  deletionReason String?       @map("deletion_reason")
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  baseCurrency   Currency?     @relation(fields: [baseCurrencyId], references: [id])
+  legalEntities  LegalEntity[]
+  companies      Company[]
+
+  @@unique([tenantId, groupCode])
+  @@index([tenantId, status, effectiveFrom, effectiveTo])
+  @@map("enterprise_groups")
+}
+
+model LegalEntity {
+  id                    String           @id @default(uuid()) @db.Uuid
+  tenantId              String           @map("tenant_id") @db.Uuid
+  enterpriseGroupId     String?          @map("enterprise_group_id") @db.Uuid
+  digitalDna            String           @unique @map("digital_dna")
+  legalEntityCode       String           @map("legal_entity_code")
+  legalEntityName       String           @map("legal_entity_name")
+  legalName             String           @map("legal_name")
+  registrationNumber    String?          @map("registration_number")
+  taxRegistrationNumber String?          @map("tax_registration_number")
+  countryCode           String           @map("country_code")
+  baseCurrencyId        String           @map("base_currency_id") @db.Uuid
+  reportingCurrencyId   String?          @map("reporting_currency_id") @db.Uuid
+  fiscalCalendarId      String?          @map("fiscal_calendar_id") @db.Uuid
+  status                String           @default("ACTIVE")
+  isActive              Boolean          @default(true) @map("is_active")
+  isDeleted             Boolean          @default(false) @map("is_deleted")
+  effectiveFrom         DateTime         @default(now()) @map("effective_from")
+  effectiveTo           DateTime?        @map("effective_to")
+  createdById           String?          @map("created_by_id") @db.Uuid
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedById           String?          @map("updated_by_id") @db.Uuid
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+  deletedById           String?          @map("deleted_by_id") @db.Uuid
+  deletedAt             DateTime?        @map("deleted_at")
+  deletionReason        String?          @map("deletion_reason")
+  tenant                Tenant           @relation(fields: [tenantId], references: [id])
+  enterpriseGroup       EnterpriseGroup? @relation(fields: [enterpriseGroupId], references: [id])
+  baseCurrency          Currency         @relation("LegalEntityBaseCurrency", fields: [baseCurrencyId], references: [id])
+  reportingCurrency     Currency?        @relation("LegalEntityReportingCurrency", fields: [reportingCurrencyId], references: [id])
+  companies             Company[]
+  plants                Plant[]
+
+  @@unique([tenantId, legalEntityCode])
+  @@index([tenantId, enterpriseGroupId, status])
+  @@map("legal_entities")
+}
+
+model Plant {
+  id                   String         @id @default(uuid()) @db.Uuid
+  tenantId             String         @map("tenant_id") @db.Uuid
+  companyId            String         @map("company_id") @db.Uuid
+  branchId             String?        @map("branch_id") @db.Uuid
+  legalEntityId        String?        @map("legal_entity_id") @db.Uuid
+  digitalDna           String         @unique @map("digital_dna")
+  plantCode            String         @map("plant_code")
+  plantName            String         @map("plant_name")
+  plantType            String         @map("plant_type")
+  countryCode          String         @map("country_code")
+  state                String?
+  city                 String?
+  addressLine1         String?        @map("address_line_1")
+  addressLine2         String?        @map("address_line_2")
+  postalCode           String?        @map("postal_code")
+  timezone             String         @default("UTC")
+  productionCalendarId String?        @map("production_calendar_id") @db.Uuid
+  defaultWarehouseId   String?        @map("default_warehouse_id")
+  hierarchyPath        String         @default("/") @map("hierarchy_path")
+  hierarchyLevel       Int            @default(0) @map("hierarchy_level")
+  status               String         @default("ACTIVE")
+  isActive             Boolean        @default(true) @map("is_active")
+  isDeleted            Boolean        @default(false) @map("is_deleted")
+  effectiveFrom        DateTime       @default(now()) @map("effective_from")
+  effectiveTo          DateTime?      @map("effective_to")
+  createdById          String?        @map("created_by_id") @db.Uuid
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedById          String?        @map("updated_by_id") @db.Uuid
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+  deletedById          String?        @map("deleted_by_id") @db.Uuid
+  deletedAt            DateTime?      @map("deleted_at")
+  deletionReason       String?        @map("deletion_reason")
+  tenant               Tenant         @relation(fields: [tenantId], references: [id])
+  company              Company        @relation(fields: [companyId], references: [id])
+  branch               Branch?        @relation("PlantBranch", fields: [branchId], references: [id])
+  legalEntity          LegalEntity?   @relation(fields: [legalEntityId], references: [id])
+  primaryForBranches   Branch[]       @relation("BranchPrimaryPlant")
+  departments          Department[]
+  locations            Location[]
+  costCenters          CostCenter[]
+  profitCenters        ProfitCenter[]
+
+  @@unique([companyId, plantCode])
+  @@index([tenantId, companyId, status, effectiveFrom, effectiveTo])
+  @@map("plants")
+}
+
+model BusinessUnit {
+  id                   String         @id @default(uuid()) @db.Uuid
+  tenantId             String         @map("tenant_id") @db.Uuid
+  companyId            String         @map("company_id") @db.Uuid
+  parentBusinessUnitId String?        @map("parent_business_unit_id") @db.Uuid
+  digitalDna           String         @unique @map("digital_dna")
+  businessUnitCode     String         @map("business_unit_code")
+  businessUnitName     String         @map("business_unit_name")
+  description          String?
+  responsibleUserId    String?        @map("responsible_user_id") @db.Uuid
+  hierarchyPath        String         @default("/") @map("hierarchy_path")
+  hierarchyLevel       Int            @default(0) @map("hierarchy_level")
+  status               String         @default("ACTIVE")
+  isActive             Boolean        @default(true) @map("is_active")
+  isDeleted            Boolean        @default(false) @map("is_deleted")
+  effectiveFrom        DateTime       @default(now()) @map("effective_from")
+  effectiveTo          DateTime?      @map("effective_to")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+  tenant               Tenant         @relation(fields: [tenantId], references: [id])
+  company              Company        @relation(fields: [companyId], references: [id])
+  parentBusinessUnit   BusinessUnit?  @relation("BusinessUnitHierarchy", fields: [parentBusinessUnitId], references: [id])
+  childBusinessUnits   BusinessUnit[] @relation("BusinessUnitHierarchy")
+  divisions            Division[]
+  departments          Department[]
+  profitCenters        ProfitCenter[]
+
+  @@unique([companyId, businessUnitCode])
+  @@index([tenantId, companyId, parentBusinessUnitId])
+  @@map("business_units")
+}
+
+model Division {
+  id                String         @id @default(uuid()) @db.Uuid
+  tenantId          String         @map("tenant_id") @db.Uuid
+  companyId         String         @map("company_id") @db.Uuid
+  businessUnitId    String?        @map("business_unit_id") @db.Uuid
+  parentDivisionId  String?        @map("parent_division_id") @db.Uuid
+  digitalDna        String         @unique @map("digital_dna")
+  divisionCode      String         @map("division_code")
+  divisionName      String         @map("division_name")
+  description       String?
+  responsibleUserId String?        @map("responsible_user_id") @db.Uuid
+  hierarchyPath     String         @default("/") @map("hierarchy_path")
+  hierarchyLevel    Int            @default(0) @map("hierarchy_level")
+  status            String         @default("ACTIVE")
+  isActive          Boolean        @default(true) @map("is_active")
+  isDeleted         Boolean        @default(false) @map("is_deleted")
+  effectiveFrom     DateTime       @default(now()) @map("effective_from")
+  effectiveTo       DateTime?      @map("effective_to")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  tenant            Tenant         @relation(fields: [tenantId], references: [id])
+  company           Company        @relation(fields: [companyId], references: [id])
+  businessUnit      BusinessUnit?  @relation(fields: [businessUnitId], references: [id])
+  parentDivision    Division?      @relation("DivisionHierarchy", fields: [parentDivisionId], references: [id])
+  childDivisions    Division[]     @relation("DivisionHierarchy")
+  departments       Department[]
+  profitCenters     ProfitCenter[]
+
+  @@unique([companyId, divisionCode])
+  @@index([tenantId, companyId, parentDivisionId])
+  @@map("divisions")
+}
+
+model Department {
+  id                 String        @id @default(uuid()) @db.Uuid
+  tenantId           String        @map("tenant_id") @db.Uuid
+  companyId          String        @map("company_id") @db.Uuid
+  plantId            String?       @map("plant_id") @db.Uuid
+  businessUnitId     String?       @map("business_unit_id") @db.Uuid
+  divisionId         String?       @map("division_id") @db.Uuid
+  parentDepartmentId String?       @map("parent_department_id") @db.Uuid
+  digitalDna         String        @unique @map("digital_dna")
+  departmentCode     String        @map("department_code")
+  departmentName     String        @map("department_name")
+  departmentType     String?       @map("department_type")
+  managerUserId      String?       @map("manager_user_id") @db.Uuid
+  costCenterId       String?       @map("cost_center_id") @db.Uuid
+  profitCenterId     String?       @map("profit_center_id") @db.Uuid
+  hierarchyPath      String        @default("/") @map("hierarchy_path")
+  hierarchyLevel     Int           @default(0) @map("hierarchy_level")
+  status             String        @default("ACTIVE")
+  isActive           Boolean       @default(true) @map("is_active")
+  isDeleted          Boolean       @default(false) @map("is_deleted")
+  effectiveFrom      DateTime      @default(now()) @map("effective_from")
+  effectiveTo        DateTime?     @map("effective_to")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  tenant             Tenant        @relation(fields: [tenantId], references: [id])
+  company            Company       @relation(fields: [companyId], references: [id])
+  plant              Plant?        @relation(fields: [plantId], references: [id])
+  businessUnit       BusinessUnit? @relation(fields: [businessUnitId], references: [id])
+  division           Division?     @relation(fields: [divisionId], references: [id])
+  parentDepartment   Department?   @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  childDepartments   Department[]  @relation("DepartmentHierarchy")
+  sections           Section[]
+  teams              Team[]
+
+  @@unique([companyId, departmentCode])
+  @@index([tenantId, companyId, parentDepartmentId])
+  @@map("departments")
+}
+
+model Section {
+  id               String     @id @default(uuid()) @db.Uuid
+  tenantId         String     @map("tenant_id") @db.Uuid
+  companyId        String     @map("company_id") @db.Uuid
+  departmentId     String     @map("department_id") @db.Uuid
+  parentSectionId  String?    @map("parent_section_id") @db.Uuid
+  digitalDna       String     @unique @map("digital_dna")
+  sectionCode      String     @map("section_code")
+  sectionName      String     @map("section_name")
+  supervisorUserId String?    @map("supervisor_user_id") @db.Uuid
+  hierarchyPath    String     @default("/") @map("hierarchy_path")
+  hierarchyLevel   Int        @default(0) @map("hierarchy_level")
+  status           String     @default("ACTIVE")
+  isActive         Boolean    @default(true) @map("is_active")
+  isDeleted        Boolean    @default(false) @map("is_deleted")
+  effectiveFrom    DateTime   @default(now()) @map("effective_from")
+  effectiveTo      DateTime?  @map("effective_to")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  tenant           Tenant     @relation(fields: [tenantId], references: [id])
+  company          Company    @relation(fields: [companyId], references: [id])
+  department       Department @relation(fields: [departmentId], references: [id])
+  parentSection    Section?   @relation("SectionHierarchy", fields: [parentSectionId], references: [id])
+  childSections    Section[]  @relation("SectionHierarchy")
+  teams            Team[]
+
+  @@unique([companyId, sectionCode])
+  @@index([tenantId, departmentId, parentSectionId])
+  @@map("sections")
+}
+
+model Team {
+  id             String      @id @default(uuid()) @db.Uuid
+  tenantId       String      @map("tenant_id") @db.Uuid
+  companyId      String      @map("company_id") @db.Uuid
+  departmentId   String?     @map("department_id") @db.Uuid
+  sectionId      String?     @map("section_id") @db.Uuid
+  parentTeamId   String?     @map("parent_team_id") @db.Uuid
+  digitalDna     String      @unique @map("digital_dna")
+  teamCode       String      @map("team_code")
+  teamName       String      @map("team_name")
+  teamLeadUserId String?     @map("team_lead_user_id") @db.Uuid
+  hierarchyPath  String      @default("/") @map("hierarchy_path")
+  hierarchyLevel Int         @default(0) @map("hierarchy_level")
+  status         String      @default("ACTIVE")
+  isActive       Boolean     @default(true) @map("is_active")
+  isDeleted      Boolean     @default(false) @map("is_deleted")
+  effectiveFrom  DateTime    @default(now()) @map("effective_from")
+  effectiveTo    DateTime?   @map("effective_to")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  tenant         Tenant      @relation(fields: [tenantId], references: [id])
+  company        Company     @relation(fields: [companyId], references: [id])
+  department     Department? @relation(fields: [departmentId], references: [id])
+  section        Section?    @relation(fields: [sectionId], references: [id])
+  parentTeam     Team?       @relation("TeamHierarchy", fields: [parentTeamId], references: [id])
+  childTeams     Team[]      @relation("TeamHierarchy")
+
+  @@unique([companyId, teamCode])
+  @@index([tenantId, companyId, parentTeamId])
+  @@map("teams")
+}
+
+model Location {
+  id               String     @id @default(uuid()) @db.Uuid
+  tenantId         String     @map("tenant_id") @db.Uuid
+  companyId        String?    @map("company_id") @db.Uuid
+  branchId         String?    @map("branch_id") @db.Uuid
+  plantId          String?    @map("plant_id") @db.Uuid
+  parentLocationId String?    @map("parent_location_id") @db.Uuid
+  digitalDna       String     @unique @map("digital_dna")
+  locationCode     String     @map("location_code")
+  locationName     String     @map("location_name")
+  locationType     String     @map("location_type")
+  addressLine1     String?    @map("address_line_1")
+  addressLine2     String?    @map("address_line_2")
+  city             String?
+  state            String?
+  postalCode       String?    @map("postal_code")
+  countryCode      String?    @map("country_code")
+  latitude         Decimal?   @db.Decimal(10, 7)
+  longitude        Decimal?   @db.Decimal(10, 7)
+  hierarchyPath    String     @default("/") @map("hierarchy_path")
+  hierarchyLevel   Int        @default(0) @map("hierarchy_level")
+  status           String     @default("ACTIVE")
+  isActive         Boolean    @default(true) @map("is_active")
+  isDeleted        Boolean    @default(false) @map("is_deleted")
+  effectiveFrom    DateTime   @default(now()) @map("effective_from")
+  effectiveTo      DateTime?  @map("effective_to")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  tenant           Tenant     @relation(fields: [tenantId], references: [id])
+  company          Company?   @relation(fields: [companyId], references: [id])
+  branch           Branch?    @relation(fields: [branchId], references: [id])
+  plant            Plant?     @relation(fields: [plantId], references: [id])
+  parentLocation   Location?  @relation("LocationHierarchy", fields: [parentLocationId], references: [id])
+  childLocations   Location[] @relation("LocationHierarchy")
+
+  @@unique([tenantId, locationCode])
+  @@index([tenantId, companyId, parentLocationId])
+  @@map("locations")
+}
+
+model CostCenter {
+  id                 String       @id @default(uuid()) @db.Uuid
+  tenantId           String       @map("tenant_id") @db.Uuid
+  companyId          String       @map("company_id") @db.Uuid
+  parentCostCenterId String?      @map("parent_cost_center_id") @db.Uuid
+  departmentId       String?      @map("department_id") @db.Uuid
+  plantId            String?      @map("plant_id") @db.Uuid
+  digitalDna         String       @unique @map("digital_dna")
+  costCenterCode     String       @map("cost_center_code")
+  costCenterName     String       @map("cost_center_name")
+  description        String?
+  responsibleUserId  String?      @map("responsible_user_id") @db.Uuid
+  hierarchyPath      String       @default("/") @map("hierarchy_path")
+  hierarchyLevel     Int          @default(0) @map("hierarchy_level")
+  status             String       @default("ACTIVE")
+  isActive           Boolean      @default(true) @map("is_active")
+  isDeleted          Boolean      @default(false) @map("is_deleted")
+  effectiveFrom      DateTime     @default(now()) @map("effective_from")
+  effectiveTo        DateTime?    @map("effective_to")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+  tenant             Tenant       @relation(fields: [tenantId], references: [id])
+  company            Company      @relation(fields: [companyId], references: [id])
+  plant              Plant?       @relation(fields: [plantId], references: [id])
+  parentCostCenter   CostCenter?  @relation("CostCenterHierarchy", fields: [parentCostCenterId], references: [id])
+  childCostCenters   CostCenter[] @relation("CostCenterHierarchy")
+
+  @@unique([companyId, costCenterCode])
+  @@index([tenantId, companyId, parentCostCenterId])
+  @@map("cost_centers")
+}
+
+model ProfitCenter {
+  id                   String         @id @default(uuid()) @db.Uuid
+  tenantId             String         @map("tenant_id") @db.Uuid
+  companyId            String         @map("company_id") @db.Uuid
+  parentProfitCenterId String?        @map("parent_profit_center_id") @db.Uuid
+  divisionId           String?        @map("division_id") @db.Uuid
+  businessUnitId       String?        @map("business_unit_id") @db.Uuid
+  plantId              String?        @map("plant_id") @db.Uuid
+  digitalDna           String         @unique @map("digital_dna")
+  profitCenterCode     String         @map("profit_center_code")
+  profitCenterName     String         @map("profit_center_name")
+  description          String?
+  responsibleUserId    String?        @map("responsible_user_id") @db.Uuid
+  hierarchyPath        String         @default("/") @map("hierarchy_path")
+  hierarchyLevel       Int            @default(0) @map("hierarchy_level")
+  status               String         @default("ACTIVE")
+  isActive             Boolean        @default(true) @map("is_active")
+  isDeleted            Boolean        @default(false) @map("is_deleted")
+  effectiveFrom        DateTime       @default(now()) @map("effective_from")
+  effectiveTo          DateTime?      @map("effective_to")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+  tenant               Tenant         @relation(fields: [tenantId], references: [id])
+  company              Company        @relation(fields: [companyId], references: [id])
+  plant                Plant?         @relation(fields: [plantId], references: [id])
+  division             Division?      @relation(fields: [divisionId], references: [id])
+  businessUnit         BusinessUnit?  @relation(fields: [businessUnitId], references: [id])
+  parentProfitCenter   ProfitCenter?  @relation("ProfitCenterHierarchy", fields: [parentProfitCenterId], references: [id])
+  childProfitCenters   ProfitCenter[] @relation("ProfitCenterHierarchy")
+
+  @@unique([companyId, profitCenterCode])
+  @@index([tenantId, companyId, parentProfitCenterId])
+  @@map("profit_centers")
+}
+
+model OrganizationNode {
+  id                  String                            @id @default(uuid()) @db.Uuid
+  tenantId            String                            @map("tenant_id") @db.Uuid
+  companyId           String?                           @map("company_id") @db.Uuid
+  nodeType            String                            @map("node_type")
+  referenceId         String                            @map("reference_id") @db.Uuid
+  nodeCode            String                            @map("node_code")
+  nodeName            String                            @map("node_name")
+  parentNodeId        String?                           @map("parent_node_id") @db.Uuid
+  hierarchyPath       String                            @default("/") @map("hierarchy_path")
+  hierarchyLevel      Int                               @default(0) @map("hierarchy_level")
+  displayOrder        Int                               @default(0) @map("display_order")
+  icon                String?
+  metadata            Json?
+  effectiveFrom       DateTime                          @default(now()) @map("effective_from")
+  effectiveTo         DateTime?                         @map("effective_to")
+  status              String                            @default("ACTIVE")
+  isActive            Boolean                           @default(true) @map("is_active")
+  createdAt           DateTime                          @default(now()) @map("created_at")
+  updatedAt           DateTime                          @updatedAt @map("updated_at")
+  tenant              Tenant                            @relation(fields: [tenantId], references: [id])
+  company             Company?                          @relation(fields: [companyId], references: [id])
+  parentNode          OrganizationNode?                 @relation("OrganizationNodeHierarchy", fields: [parentNodeId], references: [id])
+  childNodes          OrganizationNode[]                @relation("OrganizationNodeHierarchy")
+  relationshipHistory OrganizationRelationshipHistory[] @relation("NodeHistory")
+  overrides           OrganizationSettingOverride[]
+  userAccess          UserOrganizationAccess[]
+
+  @@unique([nodeType, referenceId])
+  @@index([tenantId, companyId, parentNodeId, status])
+  @@index([tenantId, hierarchyPath])
+  @@map("organization_nodes")
+}
+
+model OrganizationRelationshipHistory {
+  id                 String           @id @default(uuid()) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  organizationNodeId String           @map("organization_node_id") @db.Uuid
+  oldParentNodeId    String?          @map("old_parent_node_id") @db.Uuid
+  newParentNodeId    String?          @map("new_parent_node_id") @db.Uuid
+  effectiveFrom      DateTime         @default(now()) @map("effective_from")
+  effectiveTo        DateTime?        @map("effective_to")
+  changeReason       String           @map("change_reason")
+  changedById        String           @map("changed_by_id") @db.Uuid
+  approvalStatus     String           @default("APPROVED") @map("approval_status")
+  workflowInstanceId String?          @map("workflow_instance_id") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at")
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  organizationNode   OrganizationNode @relation("NodeHistory", fields: [organizationNodeId], references: [id])
+
+  @@index([tenantId, organizationNodeId, effectiveFrom])
+  @@map("organization_relationship_history")
+}
+
+model OrganizationInheritancePolicy {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  sourceNodeType  String   @map("source_node_type")
+  targetNodeType  String   @map("target_node_type")
+  settingKey      String   @map("setting_key")
+  inheritanceMode String   @map("inheritance_mode")
+  allowOverride   Boolean  @default(true) @map("allow_override")
+  defaultValue    Json?    @map("default_value")
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, sourceNodeType, targetNodeType, settingKey])
+  @@map("organization_inheritance_policies")
+}
+
+model OrganizationSettingOverride {
+  id                 String           @id @default(uuid()) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  organizationNodeId String           @map("organization_node_id") @db.Uuid
+  settingKey         String           @map("setting_key")
+  settingValue       Json             @map("setting_value")
+  effectiveFrom      DateTime         @default(now()) @map("effective_from")
+  effectiveTo        DateTime?        @map("effective_to")
+  approvedById       String?          @map("approved_by_id") @db.Uuid
+  approvalStatus     String           @default("APPROVED") @map("approval_status")
+  createdById        String           @map("created_by_id") @db.Uuid
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  organizationNode   OrganizationNode @relation(fields: [organizationNodeId], references: [id])
+
+  @@unique([tenantId, organizationNodeId, settingKey, effectiveFrom])
+  @@index([organizationNodeId, effectiveFrom, effectiveTo])
+  @@map("organization_setting_overrides")
+}
+
+model UserOrganizationAccess {
+  id                 String           @id @default(uuid()) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  userId             String           @map("user_id") @db.Uuid
+  organizationNodeId String           @map("organization_node_id") @db.Uuid
+  accessLevel        String           @map("access_level")
+  includeDescendants Boolean          @default(false) @map("include_descendants")
+  validFrom          DateTime         @default(now()) @map("valid_from")
+  validTo            DateTime?        @map("valid_to")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  tenant             Tenant           @relation(fields: [tenantId], references: [id])
+  user               User             @relation(fields: [userId], references: [id])
+  organizationNode   OrganizationNode @relation(fields: [organizationNodeId], references: [id])
+
+  @@unique([tenantId, userId, organizationNodeId, accessLevel, validFrom])
+  @@index([userId, organizationNodeId, validFrom, validTo])
+  @@map("user_organization_access")
 }
 
 model Warehouse {
@@ -266,30 +830,31 @@ model Warehouse {
 }
 
 model User {
-  id               String                @id @default(uuid()) @db.Uuid
-  tenantId         String                @map("tenant_id") @db.Uuid
-  digitalDna       String                @unique @map("digital_dna")
-  username         String
-  email            String
-  passwordHash     String                @map("password_hash")
-  fullName         String                @map("full_name")
-  defaultCompanyId String?               @map("default_company_id") @db.Uuid
-  defaultBranchId  String?               @map("default_branch_id") @db.Uuid
-  legacyRoles      Role[]                @default([USER]) @map("roles")
-  status           String                @default("ACTIVE")
-  lastLoginAt      DateTime?             @map("last_login_at")
-  isActive         Boolean               @default(true) @map("is_active")
-  isDeleted        Boolean               @default(false) @map("is_deleted")
-  createdAt        DateTime              @default(now()) @map("created_at")
-  updatedAt        DateTime              @updatedAt @map("updated_at")
-  tenant           Tenant                @relation(fields: [tenantId], references: [id])
-  company          Company?              @relation(fields: [defaultCompanyId], references: [id])
-  branch           Branch?               @relation(fields: [defaultBranchId], references: [id])
-  userRoles        UserRole[]
-  companyAccesses  CompanyAccess[]
-  branchAccesses   BranchAccess[]
-  createdDocuments TransactionDocument[] @relation("DocumentCreator")
-  approvalHistory  ApprovalHistory[]
+  id                 String                   @id @default(uuid()) @db.Uuid
+  tenantId           String                   @map("tenant_id") @db.Uuid
+  digitalDna         String                   @unique @map("digital_dna")
+  username           String
+  email              String
+  passwordHash       String                   @map("password_hash")
+  fullName           String                   @map("full_name")
+  defaultCompanyId   String?                  @map("default_company_id") @db.Uuid
+  defaultBranchId    String?                  @map("default_branch_id") @db.Uuid
+  legacyRoles        Role[]                   @default([USER]) @map("roles")
+  status             String                   @default("ACTIVE")
+  lastLoginAt        DateTime?                @map("last_login_at")
+  isActive           Boolean                  @default(true) @map("is_active")
+  isDeleted          Boolean                  @default(false) @map("is_deleted")
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
+  tenant             Tenant                   @relation(fields: [tenantId], references: [id])
+  company            Company?                 @relation(fields: [defaultCompanyId], references: [id])
+  branch             Branch?                  @relation(fields: [defaultBranchId], references: [id])
+  userRoles          UserRole[]
+  companyAccesses    CompanyAccess[]
+  branchAccesses     BranchAccess[]
+  createdDocuments   TransactionDocument[]    @relation("DocumentCreator")
+  approvalHistory    ApprovalHistory[]
+  organizationAccess UserOrganizationAccess[]
 
   @@unique([tenantId, email])
   @@unique([tenantId, username])

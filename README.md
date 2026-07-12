@@ -1,6 +1,6 @@
 # FlowCraft ERP
 
-FlowCraft ERP is a customizable manufacturing ERP foundation built with Next.js, NestJS, Prisma, and PostgreSQL. DBA-002 adds the production-oriented tenant, organization, currency, access-control, metadata, workflow, numbering, and audit foundation while preserving the manufacturing dashboard, hero, customization, reporting, print layout, approval, transaction, and accounting foundations.
+FlowCraft ERP is a customizable manufacturing ERP foundation built with Next.js, NestJS, Prisma, and PostgreSQL. DBA-002 adds the production-oriented tenant, currency, access-control, metadata, workflow, numbering, and audit foundation. DBA-003 adds the effective-dated enterprise structure, inherited settings, hierarchy history, and organization-scoped access model while preserving the existing manufacturing application.
 
 ## Foundation capabilities
 
@@ -15,6 +15,8 @@ FlowCraft ERP is a customizable manufacturing ERP foundation built with Next.js,
 - Append-only audit service with credential redaction and trace IDs.
 - Idempotent demo seed with 50 FEOM foundation objects and object-action permissions.
 - API-backed settings and studio screens with search, filters, pagination, loading/error/empty states, and permission-aware actions.
+- Effective-dated enterprise group, legal entity, company, branch, plant, business unit, division, department, section, team, location, cost-center, and profit-center hierarchy.
+- Historical tree queries, validated preview-before-move, inherited setting overrides, and descendant-aware organization access.
 
 ## Quick start
 
@@ -28,11 +30,19 @@ npm run prisma:seed
 npm run dev
 ```
 
+The standard Prisma seed command can also be run directly from the repository root:
+
+```powershell
+npx prisma db seed --schema apps/api/prisma/schema.prisma
+```
+
 Services:
 
 - Web: `http://localhost:3000`
 - API: `http://localhost:4000/api/v1`
 - Health: `http://localhost:4000/api/v1/health`
+- Organization API: `http://localhost:4000/api/v1/organization`
+- Enterprise structure UI: `http://localhost:3000/settings/enterprise-structure`
 
 Development seed defaults:
 
@@ -56,12 +66,12 @@ npm audit
 
 ```text
 apps/
-  api/     NestJS v1 API, Prisma schema/migration, seed, and foundation tests
-  web/     Next.js application, preserved ERP pages, settings, and studio screens
+  api/     NestJS v1 API, Prisma schema/migrations, seed, foundation, and organization tests
+  web/     Next.js application, preserved ERP pages, settings, studio, and enterprise structure screens
 packages/
   shared/  Shared ERP constants and types
 docs/
-  implementation/  DBA-002 assessment, schema backup, and implementation report
+  implementation/  DBA-002/DBA-003 assessments, schema backups, and implementation reports
 ```
 
 Customization remains metadata-driven through custom fields, workflow definitions, print layouts, reports, approvals, number series, enterprise objects, and audit records. Historical exchange rates and published workflow versions are retained instead of overwritten.

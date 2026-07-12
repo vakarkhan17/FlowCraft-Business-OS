@@ -24,6 +24,7 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { RolesModule } from './roles/roles.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
+import { OrganizationModule } from './organization/organization.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { UsersModule } from './users/users.module';
     EnterpriseObjectsModule,
     MetadataModule,
     NumberSeriesModule,
+    OrganizationModule,
     CustomizationModule,
     DashboardModule,
     LayoutsModule,
