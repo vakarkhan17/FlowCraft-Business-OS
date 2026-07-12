@@ -100,6 +100,19 @@ async function main() {
     { companyId: company.id, sku: 'RM-AL-6061', name: 'Aluminium 6061 Bar', itemType: 'RAW_MATERIAL', uom: 'KG', reorderLevel: 500, standardCost: 4.8 },
     { companyId: company.id, sku: 'FG-VALVE-100', name: 'Precision Valve Assembly', itemType: 'FINISHED_GOOD', uom: 'EA', reorderLevel: 50, standardCost: 42.5 }
   ], skipDuplicates: true });
+
+  console.log([
+    'FlowCraft seed summary:',
+    '- tenant seeded',
+    `- currencies seeded (${currencies.length})`,
+    '- company seeded',
+    '- branch seeded',
+    '- admin user seeded',
+    `- roles seeded (${roleRecords.length})`,
+    `- permissions seeded (${allPermissions.length})`,
+    `- first 50 enterprise objects seeded (${objects.length})`,
+    '- seed completed successfully'
+  ].join('\n'));
 }
 
 main().then(() => prisma.$disconnect()).catch(async (error: unknown) => {
