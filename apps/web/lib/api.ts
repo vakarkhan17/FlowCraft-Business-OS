@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export async function apiFetch<T>(path: string, token?: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}/api${path}`, {
+  const response = await fetch(`${API_URL}/api/v1${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

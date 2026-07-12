@@ -5,14 +5,14 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-flowcraft}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flowcraft}
-      POSTGRES_DB: ${POSTGRES_DB:-flowcraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flowcraft_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-flowcraft_erp}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - flowcraft_postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flowcraft} -d ${POSTGRES_DB:-flowcraft}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flowcraft} -d ${POSTGRES_DB:-flowcraft_erp}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,7 +25,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-flowcraft}:${POSTGRES_PASSWORD:-flowcraft}@postgres:5432/${POSTGRES_DB:-flowcraft}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-flowcraft}:${POSTGRES_PASSWORD:-flowcraft_dev_password}@postgres:5432/${POSTGRES_DB:-flowcraft_erp}?schema=public
       JWT_SECRET: ${JWT_SECRET:-replace-with-a-long-random-secret}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
       PORT: 4000

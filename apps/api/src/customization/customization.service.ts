@@ -35,23 +35,13 @@ export class CustomizationService {
   }
 
   numberingSeries(companyId: string) {
-    return this.prisma.documentNumberingSeries.findMany({
+    return this.prisma.numberSeries.findMany({
       where: { companyId },
-      orderBy: [{ module: 'asc' }, { documentType: 'asc' }]
+      orderBy: { seriesCode: 'asc' }
     });
   }
 
-  upsertNumberingSeries(companyId: string, data: any) {
-    return this.prisma.documentNumberingSeries.upsert({
-      where: {
-        companyId_documentType_prefix: {
-          companyId,
-          documentType: data.documentType,
-          prefix: data.prefix
-        }
-      },
-      update: data,
-      create: { ...data, companyId }
-    });
+  upsertNumberingSeries(companyId: string, data: { id: string; prefix?: string; suffix?: string; isActive?: boolean }) {
+    return this.prisma.numberSeries.update({ where: { id: data.id, companyId }, data: { prefix: data.prefix, suffix: data.suffix, isActive: data.isActive } });
   }
 }

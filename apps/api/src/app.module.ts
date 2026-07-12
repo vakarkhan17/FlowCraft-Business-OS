@@ -10,13 +10,41 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports/reports.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { WorkflowsModule } from './workflows/workflows.module';
+import { AuditModule } from './audit/audit.module';
+import { BranchesModule } from './branches/branches.module';
+import { CommonModule } from './common/common.module';
+import { CurrenciesModule } from './currencies/currencies.module';
+import { DigitalDnaModule } from './digital-dna/digital-dna.module';
+import { EnterpriseObjectsModule } from './enterprise-objects/enterprise-objects.module';
+import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
+import { HealthModule } from './health/health.module';
+import { MetadataModule } from './metadata/metadata.module';
+import { NumberSeriesModule } from './number-series/number-series.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { RolesModule } from './roles/roles.module';
+import { TenantsModule } from './tenants/tenants.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    CommonModule,
+    DigitalDnaModule,
+    AuditModule,
     AuthModule,
+    HealthModule,
+    TenantsModule,
+    CurrenciesModule,
+    ExchangeRatesModule,
     CompaniesModule,
+    BranchesModule,
+    UsersModule,
+    RolesModule,
+    PermissionsModule,
+    EnterpriseObjectsModule,
+    MetadataModule,
+    NumberSeriesModule,
     CustomizationModule,
     DashboardModule,
     LayoutsModule,

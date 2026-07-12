@@ -6,4 +6,3 @@ coverage
 .env.local
 .turbo
 *.log
-apps/api/prisma/migrations

@@ -1,45 +1,21 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/auth.guard';
-import { Roles } from '../common/roles.decorator';
-import { RolesGuard } from '../common/roles.guard';
+import { ListQueryDto } from '../common/list-query.dto';
+import { Permissions } from '../common/permissions.decorator';
+import { PermissionsGuard } from '../common/permissions.guard';
+import type { AuthenticatedRequest } from '../common/request-context';
+import { TenantContextService } from '../common/tenant-context.service';
+import { ArchiveDto, CreateCompanyDto, UpdateCompanyDto } from './company.dto';
 import { CompaniesService } from './companies.service';
 
 @Controller('companies')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class CompaniesController {
-  constructor(private readonly companies: CompaniesService) {}
-
-  @Get()
-  list(@Req() request: any) {
-    return this.companies.listCompanies(request.user.clientId);
-  }
-
-  @Post()
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  create(@Req() request: any, @Body() body: { name: string; legalName?: string; baseCurrency?: string }) {
-    return this.companies.createCompany(request.user.clientId, body);
-  }
-
-  @Get('branches')
-  branches(@Query('companyId') companyId: string, @Req() request: any) {
-    return this.companies.listBranches(companyId ?? request.user.companyId);
-  }
-
-  @Post('branches')
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  createBranch(@Req() request: any, @Body() body: { companyId?: string; code: string; name: string; address?: string }) {
-    return this.companies.createBranch(body.companyId ?? request.user.companyId, body);
-  }
-
-  @Get('warehouses')
-  warehouses(@Query('companyId') companyId: string, @Req() request: any) {
-    return this.companies.listWarehouses(companyId ?? request.user.companyId);
-  }
-
-  @Post('warehouses')
-  @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  createWarehouse(@Req() request: any, @Body() body: { companyId?: string; branchId?: string; code: string; name: string }) {
-    return this.companies.createWarehouse(body.companyId ?? request.user.companyId, body);
-  }
+  constructor(private readonly service: CompaniesService, private readonly context: TenantContextService) {}
+  @Get() @Permissions('COMPANY.VIEW') list(@Req() req: AuthenticatedRequest, @Query() query: ListQueryDto) { return this.service.list(req.user.tenantId, query); }
+  @Post() @Permissions('COMPANY.CREATE') create(@Req() req: AuthenticatedRequest, @Body() body: CreateCompanyDto) { return this.service.create(req.user.tenantId, req.user.sub, body); }
+  @Get(':id') @Permissions('COMPANY.VIEW') get(@Req() req: AuthenticatedRequest, @Param('id') id: string) { return this.service.get(req.user.tenantId, this.context.companyId(req.user, id)); }
+  @Patch(':id') @Permissions('COMPANY.EDIT') update(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: UpdateCompanyDto) { return this.service.update(req.user.tenantId, req.user.sub, this.context.companyId(req.user, id), body); }
+  @Post(':id/archive') @Permissions('COMPANY.ARCHIVE') archive(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: ArchiveDto) { return this.service.archive(req.user.tenantId, req.user.sub, this.context.companyId(req.user, id), body.reason); }
+  @Get(':id/warehouses') @Permissions('COMPANY.VIEW') warehouses(@Req() req: AuthenticatedRequest, @Param('id') id: string) { return this.service.listWarehouses(req.user.tenantId, this.context.companyId(req.user, id)); }
 }
