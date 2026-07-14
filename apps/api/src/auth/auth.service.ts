@@ -33,9 +33,12 @@ export class AuthService {
     }
 
     const roles = user.userRoles.filter((assignment) => assignment.role.isActive).map((assignment) => assignment.role.roleCode);
-    const permissions = [...new Set(user.userRoles.flatMap((assignment) =>
+    const assignedPermissions = [...new Set(user.userRoles.flatMap((assignment) =>
       assignment.role.permissions.filter((entry) => entry.allowed).map((entry) => entry.permission.permissionCode)
     ))];
+    // Super Admin is authorized by role in every guard; omitting its redundant
+    // permission list keeps the JWT safely below common HTTP header limits.
+    const permissions = roles.includes('SUPER_ADMIN') ? [] : assignedPermissions;
     const payload = {
       sub: user.id,
       email: user.email,

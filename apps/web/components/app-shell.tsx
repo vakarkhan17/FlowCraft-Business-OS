@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BarChart3, Boxes, Building2, Coins, Factory, FileText, GitBranch, LayoutTemplate, Network, Settings, ShieldCheck, Workflow } from 'lucide-react';
+import { BarChart3, Boxes, Building2, Coins, Database, Factory, FileText, GitBranch, LayoutTemplate, Network, Settings, ShieldCheck, Workflow } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { href: '/settings/companies', label: 'Companies', icon: Building2 },
   { href: '/settings/branches', label: 'Branches', icon: GitBranch },
   { href: '/settings/enterprise-structure', label: 'Enterprise Structure', icon: Network },
+  { href: '/settings/master-data', label: 'Master Data', icon: Database },
   { href: '/settings/currencies', label: 'Currencies', icon: Coins },
   { href: '/studio/object-registry', label: 'Object Registry', icon: Boxes },
   { href: '/studio/workflows', label: 'Workflows', icon: Workflow },

@@ -1,0 +1,28 @@
+'use client';
+
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Database, FileCheck2, Search, ShieldCheck } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
+import { AppShell } from './app-shell';
+
+type Dashboard = { categoryCounts: { resource: string; objectCode: string; count: number }[]; recentlyModified: Record<string, unknown>[]; pendingApprovals: number; duplicateWarnings: number; importJobs: Record<string, unknown>[]; dataQuality: { incompleteItems: number; score: number } };
+type SearchResult = { total: number; groups: { resource: string; records: Record<string, unknown>[] }[] };
+const categories = [
+  ['Geography','countries'],['Units of Measure','uom'],['Item Classification','item-groups'],['Items','items'],['Warehouses','warehouses'],['Traceability','batches'],['Business Partners','business-partners'],['Commercial Terms','payment-terms'],['Tax Masters','tax-categories'],['Governance','change-requests']
+] as const;
+
+export function MasterDataDashboard() {
+  const [dashboard, setDashboard] = useState<Dashboard>(); const [query, setQuery] = useState(''); const [results, setResults] = useState<SearchResult>(); const [error, setError] = useState('');
+  const token = typeof window === 'undefined' ? '' : localStorage.getItem('flowcraft_token') ?? '';
+  const user = useMemo(() => { try { return JSON.parse(localStorage.getItem('flowcraft_user') ?? '{}') as { roles?: string[]; permissions?: string[] }; } catch { return {}; } }, []);
+  const canView = (code: string) => user.roles?.includes('SUPER_ADMIN') || user.permissions?.includes('MASTER_DATA.VIEW') || user.permissions?.includes(`${code}.VIEW`);
+  useEffect(() => { if (token) apiFetch<Dashboard>('/api/v1/master-data/dashboard', token).then(setDashboard).catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to load master data')); }, [token]);
+  async function search() { if (query.trim().length < 2) return; setResults(await apiFetch<SearchResult>(`/api/v1/master-data/search?q=${encodeURIComponent(query)}`, token)); }
+  return <AppShell title="Enterprise Master Data" subtitle="Governed, effective-dated master records for every FlowCraft business domain.">
+    <section className="rounded-md border border-ink/10 bg-white p-5 dark:border-white/10 dark:bg-graphite"><div className="flex gap-2"><label className="relative flex-1"><Search className="absolute left-3 top-3 text-steel" size={18}/><input value={query} onChange={(event)=>setQuery(event.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')void search();}} aria-label="Search master data" placeholder="Search allowed master records" className="w-full rounded-md border border-ink/15 py-2.5 pl-10 pr-3 dark:bg-ink"/></label><button onClick={()=>void search()} className="rounded-md bg-signal px-5 font-semibold text-white">Search</button></div>{results ? <div className="mt-4 text-sm text-steel">{results.total} matches across {results.groups.length} master types</div>:null}{error?<div role="alert" className="mt-4 text-red-700">{error}</div>:null}</section>
+    <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{categories.map(([label,resource])=>{const entry=dashboard?.categoryCounts.find((item)=>item.resource===resource);return canView(entry?.objectCode??'MASTER_DATA')?<Link key={resource} href={`/settings/${resource}`} className="rounded-md border border-ink/10 bg-white p-4 transition hover:border-signal dark:border-white/10 dark:bg-graphite"><Database size={20} className="text-signal"/><div className="mt-3 font-semibold">{label}</div><div className="mt-1 text-sm text-steel">{entry?.count??0} records</div></Link>:null;})}</section>
+    <section className="mt-5 grid gap-4 lg:grid-cols-4"><article className="rounded-md border bg-white p-5 dark:bg-graphite"><ShieldCheck className="text-signal"/><div className="mt-3 text-2xl font-semibold">{dashboard?.dataQuality.score??'—'}%</div><p className="text-sm text-steel">Data quality score</p></article><article className="rounded-md border bg-white p-5 dark:bg-graphite"><FileCheck2 className="text-signal"/><div className="mt-3 text-2xl font-semibold">{dashboard?.pendingApprovals??'—'}</div><p className="text-sm text-steel">Pending approvals</p></article><article className="rounded-md border bg-white p-5 dark:bg-graphite"><AlertTriangle className="text-amber-500"/><div className="mt-3 text-2xl font-semibold">{dashboard?.duplicateWarnings??'—'}</div><p className="text-sm text-steel">Duplicate rules active</p></article><article className="rounded-md border bg-white p-5 dark:bg-graphite"><Database className="text-signal"/><div className="mt-3 text-2xl font-semibold">{dashboard?.importJobs.length??'—'}</div><p className="text-sm text-steel">Recent import jobs</p></article></section>
+    <section className="mt-5 grid gap-4 lg:grid-cols-2"><article className="rounded-md border bg-white p-5 dark:bg-graphite"><h2 className="font-semibold">Recently modified</h2><div className="mt-3 space-y-2 text-sm text-steel">{dashboard?.recentlyModified.length?dashboard.recentlyModified.map((record)=><div key={String(record.id)} className="rounded bg-ink/5 p-2">{String(record.name??record.partnerName??record.itemCode??record.id)}</div>):'No recent records'}</div></article><article className="rounded-md border bg-white p-5 dark:bg-graphite"><h2 className="font-semibold">Imports and governance</h2><div className="mt-4 flex flex-wrap gap-3"><Link href="/settings/master-import" className="rounded bg-signal px-4 py-2 text-sm font-semibold text-white">Import jobs</Link><Link href="/settings/master-change-requests" className="rounded border px-4 py-2 text-sm">Change requests</Link></div></article></section>
+  </AppShell>;
+}
