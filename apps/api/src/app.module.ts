@@ -25,6 +25,7 @@ import { RolesModule } from './roles/roles.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
 import { OrganizationModule } from './organization/organization.module';
+import { MasterDataModule } from './master-data/master-data.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { OrganizationModule } from './organization/organization.module';
     MetadataModule,
     NumberSeriesModule,
     OrganizationModule,
+    MasterDataModule,
     CustomizationModule,
     DashboardModule,
     LayoutsModule,
