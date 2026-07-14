@@ -12,8 +12,8 @@ interface Column { key: string; label: string }
 interface FormField { key: string; label: string; required?: boolean; type?: 'text' | 'number' | 'date' }
 interface PageResult { data: DataRecord[]; meta?: { page: number; pageSize: number; total: number } }
 
-export function FoundationList({ title, subtitle, endpoint, objectCode, columns, fields, archiveEnabled = true }: {
-  title: string; subtitle: string; endpoint: string; objectCode: string; columns: Column[]; fields: FormField[]; archiveEnabled?: boolean;
+export function FoundationList({ title, subtitle, endpoint, objectCode, columns, fields, archiveEnabled = true, wrapData = false }: {
+  title: string; subtitle: string; endpoint: string; objectCode: string; columns: Column[]; fields: FormField[]; archiveEnabled?: boolean; wrapData?: boolean;
 }) {
   const [rows, setRows] = useState<DataRecord[]>([]);
   const [search, setSearch] = useState('');
@@ -52,7 +52,7 @@ export function FoundationList({ title, subtitle, endpoint, objectCode, columns,
     event.preventDefault(); setSaving(true); setError('');
     try {
       const body = Object.fromEntries(fields.map((field) => [field.key, field.type === 'number' ? Number(form[field.key]) : form[field.key]]));
-      await apiFetch(endpoint, token, { method: 'POST', body: JSON.stringify(body) });
+      await apiFetch(endpoint, token, { method: 'POST', body: JSON.stringify(wrapData ? { data: body } : body) });
       setForm({}); setShowForm(false); await load();
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Save failed'); }
     finally { setSaving(false); }
@@ -63,7 +63,8 @@ export function FoundationList({ title, subtitle, endpoint, objectCode, columns,
     if (!editable) return;
     const next = window.prompt(`Update ${editable.label}`, String(row[editable.key] ?? ''));
     if (next === null) return;
-    await apiFetch(`${endpoint}/${row.id}`, token, { method: 'PATCH', body: JSON.stringify({ [editable.key]: editable.type === 'number' ? Number(next) : next }) });
+    const body = { [editable.key]: editable.type === 'number' ? Number(next) : next };
+    await apiFetch(`${endpoint}/${row.id}`, token, { method: 'PATCH', body: JSON.stringify(wrapData ? { data: body } : body) });
     await load();
   }
 
