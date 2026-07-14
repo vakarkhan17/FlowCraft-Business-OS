@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-export type DnaObject = 'TEN' | 'CMP' | 'BRN' | 'USR' | 'CUR' | 'GRP' | 'LEN' | 'PLT' | 'BUN' | 'DIV' | 'DEP' | 'SEC' | 'TEM' | 'LOC' | 'CCT' | 'PCT' | 'ORG';
+export type DnaObject = 'TEN' | 'CMP' | 'BRN' | 'USR' | 'CUR' | 'GRP' | 'LEN' | 'PLT' | 'BUN' | 'DIV' | 'DEP' | 'SEC' | 'TEM' | 'LOC' | 'CCT' | 'PCT' | 'ORG' | 'CTY' | 'TER' | 'CON' | 'UOM' | 'IGR' | 'ICA' | 'BRD' | 'MFR' | 'ITM' | 'WHS' | 'WHZ' | 'BIN' | 'BPR';
 
 @Injectable()
 export class DigitalDnaService {
