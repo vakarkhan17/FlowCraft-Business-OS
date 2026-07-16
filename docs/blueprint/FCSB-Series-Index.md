@@ -12,8 +12,9 @@ This index records publication identity and approval state. A document marked **
 | FCSB-002 | [Application and Platform Architecture](./FCSB-Volume-2-Application-and-Platform-Architecture.md) | 1.0 Draft | Architecture Review Draft | DBA-002 Platform Foundation; DBA-003 Enterprise Structure; DBA-004 Enterprise Master Data | Pending Architecture Board review | 2026-07-15 | FCSB-001; controlled FEAPB/FEOM/EOR definitions; DBA reports; current application, schema, migrations, tests, and deployment configuration |
 | FCSB-003 | [Enterprise Data and Information Architecture](./FCSB-Volume-3-Enterprise-Data-and-Information-Architecture.md) | 1.0 Draft | Architecture Review Draft | DBA-002 Platform Foundation; DBA-003 Enterprise Structure; DBA-004 Enterprise Master Data; preparation for DBA-005 Finance Foundation and DBA-006 Inventory Ledger | Pending Architecture Board review | 2026-07-15 | FCSB-001; FCSB-002; controlled FEAPB/FEOM/EOR/UMF/UFT definitions; accepted Prisma schema, migrations, seed, tests, and DBA reports |
 | FCSB-004 | [Integration Architecture](./FCSB-Volume-4-Integration-Architecture.md) | 1.0 Draft | Architecture Review Draft | DBA-002 Platform Foundation; DBA-003 Enterprise Structure; DBA-004 Enterprise Master Data; preparation for future integration milestones | Pending Architecture Board review | 2026-07-16 | FCSB-001; FCSB-002; FCSB-003; controlled FEAPB/FEOM/EOR definitions; current API, authentication, import/export metadata, schema, tests, and deployment evidence |
+| FCSB-005 | [Security and Trust Architecture](./FCSB-Volume-5-Security-and-Trust-Architecture.md) | 1.0 Draft | Architecture Review Draft | DBA-002 Platform Foundation; DBA-003 Enterprise Structure; DBA-004 Enterprise Master Data; security gates for DBA-005 Finance Foundation, DBA-006 Inventory Ledger, and production deployment | Pending Architecture Board and Security Review | 2026-07-16 | FCSB-001; FCSB-002; FCSB-003; FCSB-004; controlled FEAPB/FEOM/EOR definitions; current identity, authorization, scope, audit, schema, tests, web-session, and deployment evidence |
 
-**Next planned volume:** FCSB-005 — Security and Trust Architecture.
+**Next planned volume:** FCSB-006 — Deployment and Operations Architecture.
 
 ## Controlled 25-volume roadmap
 
@@ -25,7 +26,7 @@ Volume names are controlled at the roadmap level. A planned or future entry does
 | 2 | FCSB-002 | Application and Platform Architecture | Application boundaries, platform services, metadata execution, APIs, runtime seams, and extension model | Drafted — Architecture Review Draft |
 | 3 | FCSB-003 | Enterprise Data and Information Architecture | Data ownership, master and transaction domains, lineage, effective dating, retention, analytics, and migration | Drafted — Architecture Review Draft |
 | 4 | FCSB-004 | Integration Architecture | Integration patterns, contracts, APIs, events, files, identity federation, and partner connectivity | Drafted — Architecture Review Draft |
-| 5 | FCSB-005 | Security and Trust Architecture | Threat model, identity, authorization, segregation of duties, privacy, audit, and assurance | Planned |
+| 5 | FCSB-005 | Security and Trust Architecture | Threat model, identity, authorization, segregation of duties, privacy, audit, and assurance | Drafted — Architecture Review Draft |
 | 6 | FCSB-006 | Deployment and Operations Architecture | Environments, topology, observability, resilience, backup, recovery, and release operations | Planned |
 | 7 | FCSB-007 | Manufacturing Solution Architecture | Manufacturing planning, material flow, costing, execution, quality, maintenance, and shop-floor concerns | Planned |
 | 8 | FCSB-008 | Knowledge Graph and Governed AI Architecture | FKG semantics, governed context, AI access, explainability, controls, and operating model | Future |
